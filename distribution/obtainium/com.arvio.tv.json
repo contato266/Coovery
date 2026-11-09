@@ -1,0 +1,12 @@
+{
+    "apps": [
+        {
+            "id": "com.coovery.tv",
+            "url": "https://github.com/contato266/Coovery",
+            "author": "contato266",
+            "name": "Coovery",
+            "preferredApkIndex": null,
+            "additionalSettings": "{\"apkFilterRegEx\":\"Coovery-.*-sideload-release\\\\.apk\",\"includePrereleases\":false,\"fallbackToOlderReleases\":true}"
+        }
+    ]
+}

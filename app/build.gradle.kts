@@ -88,10 +88,12 @@ android {
         // idle realtime polling off Supabase unless explicitly re-enabled.
         buildConfigField("Boolean", "ENABLE_TMDB_EDGE_PROXY", "false")
         buildConfigField("Boolean", "ENABLE_TRAKT_EDGE_PROXY", "false")
-        buildConfigField("Boolean", "ENABLE_REALTIME_CLOUD_SYNC", "true")
+        // Coovery launch builds keep catalogs on the direct APIs and use Firebase
+        // for the app backend. Supabase and Netlify cloud sync stay off.
+        buildConfigField("Boolean", "ENABLE_REALTIME_CLOUD_SYNC", "false")
         buildConfigField("Boolean", "ENABLE_REALTIME_WATCH_SYNC", "false")
         buildConfigField("Boolean", "ENABLE_PERIODIC_CLOUD_PULL", "false")
-        buildConfigField("Boolean", "ENABLE_NETLIFY_CLOUD_SYNC", "true")
+        buildConfigField("Boolean", "ENABLE_NETLIFY_CLOUD_SYNC", "false")
         buildConfigField("Boolean", "ENABLE_SUPABASE_SYNC_MIRROR", "false")
         buildConfigField("Boolean", "DISCORD_RICH_PRESENCE_AVAILABLE", hasDiscordSdk.toString())
         buildConfigField(
@@ -590,40 +592,9 @@ fun escapeBuildConfigString(value: String): String =
 
 val validateReleaseCloudSecrets = tasks.register("validateReleaseCloudSecrets") {
     doLast {
-        val appAnonKey = localSecretValue("APP_ANON_KEY").ifBlank { localSecretValue("SUPABASE_ANON_KEY") }
-        val supabaseUrl = localSecretValue("SUPABASE_URL")
-        val traktClientId = localSecretValue("TRAKT_CLIENT_ID")
-        val traktClientSecret = localSecretValue("TRAKT_CLIENT_SECRET")
-        val telegramApiId = localSecretValue("TELEGRAM_API_ID").toIntOrNull() ?: 0
-        val telegramApiHash = localSecretValue("TELEGRAM_API_HASH")
-        require(telegramApiId > 0 && telegramApiHash.matches(Regex("[a-fA-F0-9]{32}"))) {
-            "Release builds require valid TELEGRAM_API_ID and TELEGRAM_API_HASH values. " +
-                "Refusing to ship an official build with Telegram disabled."
-        }
-        val supabaseHost = supabaseUrl.substringAfter("://", missingDelimiterValue = "").substringBefore('/')
-        val hasValidSupabaseUrl =
-            (supabaseUrl.startsWith("https://") || supabaseUrl.startsWith("http://")) &&
-                supabaseHost.contains('.') &&
-                '*' !in supabaseUrl
-        require(hasValidSupabaseUrl) {
-            "Release builds require a valid HTTP(S) SUPABASE_URL " +
-                "(length=${supabaseUrl.length}, http=${supabaseUrl.startsWith("http")}, " +
-                "hostPresent=${supabaseHost.isNotBlank()}, hostHasDot=${supabaseHost.contains('.')}, redacted=${'*' in supabaseUrl})."
-        }
-        require(
-            appAnonKey.length > 40 &&
-                !appAnonKey.equals("your-supabase-anon-key", ignoreCase = true) &&
-                !appAnonKey.startsWith("your-", ignoreCase = true)
-        ) {
-            "Release builds require a real APP_ANON_KEY in secrets.properties, Gradle properties, or the environment."
-        }
-        require(
-            traktClientId.length > 20 &&
-                !traktClientId.startsWith("your-", ignoreCase = true) &&
-                traktClientSecret.length > 20 &&
-                !traktClientSecret.startsWith("your-", ignoreCase = true)
-        ) {
-            "Release builds require real TRAKT_CLIENT_ID and TRAKT_CLIENT_SECRET values."
+        val tmdbApiKey = localSecretValue("TMDB_API_KEY")
+        require(tmdbApiKey.matches(Regex("[a-fA-F0-9]{32}"))) {
+            "Release builds require a real TMDB_API_KEY (32 hexadecimal characters) in secrets.properties."
         }
     }
 }

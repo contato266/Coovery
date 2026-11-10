@@ -1,13 +1,13 @@
 {
   "project_info": {
-    "project_number": "000000000000",
-    "project_id": "coovery-placeholder",
-    "storage_bucket": "coovery-placeholder.appspot.com"
+    "project_number": "928893798354",
+    "project_id": "coovery",
+    "storage_bucket": "coovery.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:000000000000:android:0000000000000000000000",
+        "mobilesdk_app_id": "1:928893798354:android:5084e774a18dd83e19aa0b",
         "android_client_info": {
           "package_name": "com.coovery.tv"
         }
@@ -15,26 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "your-firebase-api-key"
-        }
-      ],
-      "services": {
-        "appinvite_service": {
-          "other_platform_oauth_client": []
-        }
-      }
-    },
-    {
-      "client_info": {
-        "mobilesdk_app_id": "1:000000000000:android:0000000000000000000001",
-        "android_client_info": {
-          "package_name": "com.coovery.tv.beta"
-        }
-      },
-      "oauth_client": [],
-      "api_key": [
-        {
-          "current_key": "your-firebase-api-key"
+          "current_key": "AIzaSyBGV5eapkjphGGR7KRF3foBl7QG0oMn--4"
         }
       ],
       "services": {

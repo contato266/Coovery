@@ -202,8 +202,8 @@ android {
             isJniDebuggable = false
             renderscriptOptimLevel = 3
 
-            // Placeholder Firebase config must not upload crashes. Turn this back
-            // on after replacing app/google-services.json with your own project.
+            // Real Coovery Firebase project is connected. Crash uploads stay off
+            // until Crashlytics is intentionally enabled.
             buildConfigField("Boolean", "ENABLE_CRASH_REPORTING", "false")
             configure<CrashlyticsExtension> {
                 nativeSymbolUploadEnabled = true

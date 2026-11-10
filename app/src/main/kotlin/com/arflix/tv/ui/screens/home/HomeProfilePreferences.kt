@@ -35,7 +35,7 @@ internal fun readHomeProfilePreferences(
     val contentLang = resolveAppLanguage(preferences, profileId)
     return HomeProfilePreferences(
         trailerAutoPlay = preferences[booleanPreferencesKey("${prefix}trailer_auto_play")] ?: true,
-        trailerSoundEnabled = preferences[booleanPreferencesKey("${prefix}trailer_sound_enabled")] ?: false,
+        trailerSoundEnabled = preferences[booleanPreferencesKey("${prefix}trailer_sound_enabled")] ?: true,
         trailerDelaySeconds = preferences[stringPreferencesKey("${prefix}trailer_delay_seconds")]
             ?.toIntOrNull() ?: 1,
         trailerInCards = preferences[booleanPreferencesKey("${prefix}trailer_in_cards")] ?: true,

@@ -112,7 +112,7 @@ data class HomeUiState(
     val heroLogoUrl: String? = null,
     val heroTrailerKey: String? = null,
     val trailerAutoPlay: Boolean = true,
-    val trailerSoundEnabled: Boolean = false,
+    val trailerSoundEnabled: Boolean = true,
     val trailerDelaySeconds: Int = 1,
     val trailerInCards: Boolean = true,
     val netflixHomeStyle: Boolean = true,

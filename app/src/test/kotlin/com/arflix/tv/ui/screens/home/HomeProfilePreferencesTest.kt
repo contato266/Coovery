@@ -88,7 +88,7 @@ class HomeProfilePreferencesTest {
         val settings = readHomeProfilePreferences(mutablePreferencesOf(), "primary")
 
         assertThat(settings.trailerAutoPlay).isTrue()
-        assertThat(settings.trailerSoundEnabled).isFalse()
+        assertThat(settings.trailerSoundEnabled).isTrue()
         assertThat(settings.trailerDelaySeconds).isEqualTo(1)
         assertThat(settings.trailerInCards).isTrue()
         assertThat(settings.netflixHomeStyle).isTrue()

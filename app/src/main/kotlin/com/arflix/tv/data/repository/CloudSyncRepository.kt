@@ -308,7 +308,7 @@ class CloudSyncRepository @Inject constructor(
         val autoPlayMaxSizeGb: Int? = null,
         val homePresentationVersion: Int = 0,
         val trailerAutoPlay: Boolean = true,
-        val trailerSoundEnabled: Boolean = false,
+        val trailerSoundEnabled: Boolean = true,
         val trailerDelaySeconds: Int = 1,
         val trailerInCards: Boolean = true,
         // Null from older clients: keep the local preference.
@@ -707,7 +707,7 @@ class CloudSyncRepository @Inject constructor(
 
                         homePresentationVersion = HOME_PRESENTATION_VERSION,
                         trailerAutoPlay = prefs[trailerAutoPlayKeyFor(profile.id)] ?: true,
-                        trailerSoundEnabled = prefs[trailerSoundEnabledKeyFor(profile.id)] ?: false,
+                        trailerSoundEnabled = prefs[trailerSoundEnabledKeyFor(profile.id)] ?: true,
                         trailerDelaySeconds = prefs[trailerDelayKeyFor(profile.id)]?.toIntOrNull() ?: 1,
                         trailerInCards = prefs[trailerInCardsKeyFor(profile.id)] ?: true,
                         netflixHomeStyle = prefs[netflixHomeStyleKeyFor(profile.id)] ?: true,

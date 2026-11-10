@@ -2338,7 +2338,7 @@ fun LiveTvScreen(
     // A second selection on the currently playing programme offers Watch Live
     // and, only after a confident movie/series match, Stream Now.
     var programActionDialog by remember { mutableStateOf<ProgramActionData?>(null) }
-    var programActionVodMatch by remember { mutableStateOf<COOVERYMediaItem?>(null) }
+    var programActionVodMatch by remember { mutableStateOf<ArvioMediaItem?>(null) }
     var programActionLookupInProgress by remember { mutableStateOf(false) }
     val programActionLookupGuard = remember { EpgVodLookupGuard() }
     val programActionLookupJob = remember { arrayOf<Job?>(null) }

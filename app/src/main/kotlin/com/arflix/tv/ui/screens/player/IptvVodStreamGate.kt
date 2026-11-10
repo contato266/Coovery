@@ -40,6 +40,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import okhttp3.OkHttpClient
+import okhttp3.Protocol
 
 /** Where a limited source reopens after its session was closed for the background or a cast. */
 internal data class IptvVodReopen(val positionMs: Long, val playWhenReady: Boolean)
@@ -279,6 +280,16 @@ internal fun rememberIptvVodGate(): IptvVodStreamGate {
     return remember { IptvVodStreamGate(network = network) }
 }
 
+/** Same agent the IPTV catalog and live player already send. Panels that answer VLC often stall a browser agent. */
+internal const val IPTV_VOD_PLAYBACK_USER_AGENT = "VLC/3.0.20 LibVLC/3.0.20"
+
+/** A header on the source wins. Otherwise the caller’s agent, then the IPTV default. */
+internal fun iptvVodPlaybackUserAgent(explicit: String, headers: Map<String, String>): String {
+    val fromHeaders = headers.entries.firstOrNull { it.key.equals("User-Agent", ignoreCase = true) }?.value?.trim()
+    if (!fromHeaders.isNullOrEmpty()) return fromHeaders
+    return explicit.trim().ifEmpty { IPTV_VOD_PLAYBACK_USER_AGENT }
+}
+
 /** Every loader of a limited IPTV VOD source shares one session's factory, so nothing escapes its allowance. */
 internal class IptvVodMediaSources(
     private val context: Context,
@@ -287,12 +298,15 @@ internal class IptvVodMediaSources(
     private val extractors: ExtractorsFactory,
 ) {
     // Never cancelAllAsync or evictAll here: those sweep every call on the client.
+    // HTTP/1.1 matches players that actually finish these files. Many panels accept
+    // the catalog over HTTP/2 and then never send the movie.
     private val client = playbackClient.newBuilder()
+        .protocols(listOf(Protocol.HTTP_1_1))
         .addInterceptor(IptvPlaybackConnections())
         .build()
 
     fun create(
-        session: IptvStreamSession,
+        session: IptvStreamSession?,
         headers: Map<String, String>,
         mediaItem: MediaItem,
         isHls: Boolean,
@@ -300,8 +314,9 @@ internal class IptvVodMediaSources(
         hasSidecars: Boolean,
         panelCheckAllowed: Boolean = false,
     ): MediaSource {
-        val http = OkHttpDataSource.Factory(session.callFactory(client))
-            .setUserAgent(userAgent)
+        val calls = session?.callFactory(client) ?: client
+        val http = OkHttpDataSource.Factory(calls)
+            .setUserAgent(iptvVodPlaybackUserAgent(userAgent, headers))
             .setDefaultRequestProperties(headers)
         val policy = IptvLoadErrorHandlingPolicy(vodMidStreamDrop(isHls, isDash, panelCheckAllowed))
         return when {

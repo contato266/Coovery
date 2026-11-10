@@ -31,6 +31,7 @@ internal class IptvStreamServerFixture : AutoCloseable {
     private val lock = Object()
     private val log = ArrayList<Event>()
     private val hitLog = ArrayList<Hit>()
+    private val heads = ArrayList<String>()
     private val streams = ArrayList<Stream>()
     private val connections = ArrayList<Socket>()
     private val peakByAccount = HashMap<String, Int>()
@@ -62,6 +63,7 @@ internal class IptvStreamServerFixture : AutoCloseable {
     val accountCheckCount: Int get() = synchronized(lock) { checks }
     /** Every request that is not an account check, in arrival order, with the Range it asked for. */
     val hits: List<Hit> get() = synchronized(lock) { ArrayList(hitLog) }
+    val requestHeads: List<String> get() = synchronized(lock) { ArrayList(heads) }
 
     fun setAccount(active: Int, max: Int) = synchronized(lock) { accountAnswer = Answer(200, accountBody(active, max)) }
     fun setAccountAnswer(status: Int, body: String) = synchronized(lock) { accountAnswer = Answer(status, body) }
@@ -89,6 +91,7 @@ internal class IptvStreamServerFixture : AutoCloseable {
         try {
             socket.soTimeout = 5_000
             val head = readHead(socket) ?: return
+            synchronized(lock) { heads.add(head) }
             val target = head.lineSequence().first().split(' ').getOrNull(1) ?: return
             val range = head.lineSequence().firstOrNull { it.startsWith("Range:", ignoreCase = true) }?.substringAfter(':')?.trim()
             val path = target.substringBefore('?')

@@ -1228,7 +1228,7 @@ private fun PlayerScreenContent(args: PlayerScreenArgs, viewModel: PlayerViewMod
     }
 
     val iptvVodMediaSources = remember(playbackHttpClient, audioTapExtractorsFactory) {
-        IptvVodMediaSources(context, playbackHttpClient, OkHttpProvider.userAgent, audioTapExtractorsFactory)
+        IptvVodMediaSources(context, playbackHttpClient, IPTV_VOD_PLAYBACK_USER_AGENT, audioTapExtractorsFactory)
     }
 
     // Protocol-specific media source factories for faster startup
@@ -2816,7 +2816,8 @@ private fun PlayerScreenContent(args: PlayerScreenArgs, viewModel: PlayerViewMod
                     youTubeCollectionMediaSource(
                         context, audioTapExtractorsFactory, mediaItem, latestUiState.selectedStream?.youTubeAudioUrl
                     )
-                iptvVodSession != null -> iptvVodMediaSources.create(
+                com.arflix.tv.data.model.IptvVodSourceIds.isIptvVodAddonId(latestUiState.selectedStream?.addonId) ->
+                    iptvVodMediaSources.create(
                     iptvVodSession, baseRequestHeaders + streamHeaders, mediaItem,
                     isHlsStream, isDashStream, hasSidecars = preloadedSubtitleConfigs.isNotEmpty(),
                     panelCheckAllowed = iptvVodGate.panelCheckAllowed
@@ -3402,8 +3403,18 @@ private fun PlayerScreenContent(args: PlayerScreenArgs, viewModel: PlayerViewMod
                         exoPlayer.playWhenReady = true
                     }
                 }
-                val hardTimeoutMs = (initialBufferingTimeoutMs + if (isHeavyStartupSource) 12_000L else 8_000L)
-                    .coerceAtMost(45_000L)
+                val iptvVodStartup = com.arflix.tv.data.model.IptvVodSourceIds.isIptvVodAddonId(
+                    uiState.selectedStream?.addonId
+                )
+                // IPTV panels often take longer than an addon CDN to send the first picture.
+                // Give that file the same room the connection itself already has, instead of
+                // showing "did not start in time" while the movie is still opening.
+                val hardTimeoutMs = if (iptvVodStartup) {
+                    45_000L
+                } else {
+                    (initialBufferingTimeoutMs + if (isHeavyStartupSource) 12_000L else 8_000L)
+                        .coerceAtMost(45_000L)
+                }
                 if (!startupHardFailureReported && startupBufferDuration > hardTimeoutMs) {
                     playbackStartupDiag(
                         "hard startup timeout elapsedMs=$startupBufferDuration hardTimeoutMs=$hardTimeoutMs " +

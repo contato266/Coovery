@@ -57,6 +57,47 @@ class IptvVodStreamGateTest {
     private val checked = iptvStreamPolicy(alice, IptvConnectionLimit.AUTO, 1)!!
     private fun TestScope.table() = IptvStreamSessionTable({ testScheduler.currentTime }, StandardTestDispatcher(testScheduler))
 
+    @Test fun sourceUserAgentOverridesTheIptvDefault() {
+        assertEquals("Panel/1", iptvVodPlaybackUserAgent(IPTV_VOD_PLAYBACK_USER_AGENT, mapOf("user-agent" to "Panel/1")))
+        assertEquals(IPTV_VOD_PLAYBACK_USER_AGENT, iptvVodPlaybackUserAgent("  ", emptyMap()))
+    }
+
+    @Test fun moviePlaybackAsksThePanelOverHttp1WithTheIptvAgent() {
+        IptvStreamServerFixture().use { panel ->
+            val session = IptvStreamSessionTable().open(alice, 1)
+            val sources = IptvVodMediaSources(
+                RuntimeEnvironment.getApplication(),
+                OkHttpClient(),
+                IPTV_VOD_PLAYBACK_USER_AGENT,
+                DefaultExtractorsFactory()
+            )
+            val renderers = RenderersFactory { _, _, _, _, _ ->
+                arrayOf(AcceptingRenderer(C.TRACK_TYPE_VIDEO), AcceptingRenderer(C.TRACK_TYPE_AUDIO))
+            }
+            val player = ExoPlayer.Builder(RuntimeEnvironment.getApplication(), renderers).build()
+            try {
+                val item = MediaItem.fromUri("${panel.baseUrl}/movie/alice/pass/1.mkv")
+                player.setMediaSource(sources.create(session, emptyMap(), item, isHls = false, isDash = false, hasSidecars = false))
+                player.prepare()
+                val deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(40)
+                while (panel.requestHeads.none { it.contains("/movie/alice/pass/1.mkv") }) {
+                    assertTrue(System.nanoTime() < deadline)
+                    Thread.yield()
+                }
+                val head = panel.requestHeads.first { it.contains("/movie/alice/pass/1.mkv") }
+                assertTrue(head.lineSequence().first().endsWith("HTTP/1.1"))
+                assertTrue(
+                    head.lineSequence().any {
+                        it.equals("User-Agent: $IPTV_VOD_PLAYBACK_USER_AGENT", ignoreCase = true)
+                    }
+                )
+            } finally {
+                player.release()
+                session.close()
+            }
+        }
+    }
+
     @Test fun backgroundReopenChecksEvenAfterARecentCloseAndPreservesThePausedPosition() = runTest {
         val table = table()
         val gate = IptvVodStreamGate(table)

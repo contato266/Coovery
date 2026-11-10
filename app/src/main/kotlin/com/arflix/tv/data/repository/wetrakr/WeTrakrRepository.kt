@@ -67,7 +67,7 @@ class WeTrakrRepository @Inject constructor(
     private suspend fun http(path: String, method: String, body: Any? = null, access: String? = null): Pair<JsonElement, Map<String, String>> = withContext(Dispatchers.IO) {
         if (System.currentTimeMillis() < blockedUntil) throw WeTrakrError(429, "rate_limited", (blockedUntil - System.currentTimeMillis()) / 1000 + 1)
         val builder = Request.Builder().url("https://api.wetrakr.com$path")
-            .header("wetrakr-api-key", WETRAKR_CLIENT_ID).header("wetrakr-api-version", "1").header("User-Agent", "ARVIO/2.0 (Android)")
+            .header("wetrakr-api-key", WETRAKR_CLIENT_ID).header("wetrakr-api-version", "1").header("User-Agent", "COOVERY/2.0 (Android)")
         access?.let { builder.header("Authorization", "Bearer $it") }
         builder.method(method, if (method == "GET") null else gson.toJson(body ?: emptyMap<String, String>()).toRequestBody("application/json".toMediaType()))
         http.newCall(builder.build()).execute().use { response ->

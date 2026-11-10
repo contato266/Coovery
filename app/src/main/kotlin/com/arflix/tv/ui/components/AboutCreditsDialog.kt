@@ -42,7 +42,7 @@ fun AboutCreditsDialog(onDismiss: () -> Unit) {
                     .verticalScroll(rememberScrollState()).padding(24.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                Text("ARVIO", fontSize = 28.sp)
+                Text("COOVERY", fontSize = 28.sp)
                 Text(stringResource(R.string.about_credits), fontSize = 20.sp)
                 AsyncImage(
                     model = "file:///android_asset/tmdb-logo.svg",

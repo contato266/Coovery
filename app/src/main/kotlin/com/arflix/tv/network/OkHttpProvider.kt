@@ -99,7 +99,7 @@ object OkHttpProvider {
             com.arflix.tv.util.DeviceType.TV -> "Android TV"
             null -> "Android"
         }
-        return "ARVIO/$cleanVersion ($platform)"
+        return "COOVERY/$cleanVersion ($platform)"
     }
 
     fun setCustomUserAgent(value: String) {

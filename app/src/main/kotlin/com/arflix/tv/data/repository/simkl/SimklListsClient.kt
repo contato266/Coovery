@@ -19,7 +19,7 @@ import okio.ByteString.Companion.toByteString
 class SimklListsException(val reason: String, val status: Int = 0) : IOException(when (reason) {
     "premium_only" -> "SIMKL custom lists require a SIMKL PRO or VIP account."
     "oauth2_token_required", "user_token_required", "invalid_grant", "user_token_failed", "expired_token" -> "Connect SIMKL Lists in Add catalogue to access custom lists."
-    "invalid_client", "client_id_failed" -> "SIMKL Lists requires ARVIO's AUTH V2 client configuration."
+    "invalid_client", "client_id_failed" -> "SIMKL Lists requires COOVERY's AUTH V2 client configuration."
     "private_list" -> "This SIMKL list is private. Connect an account that has access."
     "url_failed" -> "This SIMKL list could not be found."
     "rate_limit", "slow_down" -> "SIMKL is limiting requests. Please try again later."
@@ -147,7 +147,7 @@ class SimklListsClient(
         val url = baseUrl.newBuilder().addPathSegments(path).addQueryParameter("client_id", clientId)
             .addQueryParameter("app-name", "arvio").addQueryParameter("app-version", version)
         query.forEach { (key, value) -> url.addQueryParameter(key, value) }
-        val builder = Request.Builder().url(url.build()).header("User-Agent", "ARVIO/$version")
+        val builder = Request.Builder().url(url.build()).header("User-Agent", "COOVERY/$version")
         token?.let { builder.header("Authorization", "Bearer $it") }
         if (form != null) builder.post(FormBody.Builder().apply { form.forEach { (key, value) -> add(key, value) } }.build())
         if (jsonPost) builder.post("{}".toRequestBody("application/json".toMediaType()))

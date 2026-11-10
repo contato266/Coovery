@@ -277,18 +277,18 @@ internal fun resolveTelegramDeviceModel(
     val formatted = when {
         cleanName.isEmpty() -> {
             when (deviceType) {
-                DeviceType.TV -> "ARVIO TV"
-                DeviceType.TABLET -> "ARVIO Tablet"
-                DeviceType.PHONE -> "ARVIO"
+                DeviceType.TV -> "COOVERY TV"
+                DeviceType.TABLET -> "COOVERY Tablet"
+                DeviceType.PHONE -> "COOVERY"
             }
         }
-        cleanName.contains("arvio", ignoreCase = true) -> cleanName
+        cleanName.contains("arvio", ignoreCase = true) || cleanName.contains("coovery", ignoreCase = true) -> cleanName
         deviceType == DeviceType.TV -> {
-            if (cleanName.contains("tv", ignoreCase = true)) "ARVIO ($cleanName)"
-            else "ARVIO TV ($cleanName)"
+            if (cleanName.contains("tv", ignoreCase = true)) "COOVERY ($cleanName)"
+            else "COOVERY TV ($cleanName)"
         }
-        deviceType == DeviceType.TABLET -> "ARVIO Tablet ($cleanName)"
-        else -> "ARVIO ($cleanName)"
+        deviceType == DeviceType.TABLET -> "COOVERY Tablet ($cleanName)"
+        else -> "COOVERY ($cleanName)"
     }
     return formatted.take(64)
 }

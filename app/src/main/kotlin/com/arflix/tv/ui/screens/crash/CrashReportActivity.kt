@@ -145,7 +145,7 @@ fun CrashReportScreen(
 
     val formattedReport = remember(crashId, crashMsg, crashVersion, timeString, firebase) {
         """
-        **🚨 ARVIO Crash Report**
+        **🚨 COOVERY Crash Report**
         **Crash ID:** `$crashId`
         **${if (firebase) "Crashlytics" else "Sentry Link"}:** $dashboardLink
         ${if (firebase) "**Report reference:** `arvio_report_id=$crashId`" else ""}
@@ -261,7 +261,7 @@ fun CrashReportScreen(
                     Button(
                         onClick = {
                             val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                            val clip = ClipData.newPlainText("ARVIO Crash Report", formattedReport)
+                            val clip = ClipData.newPlainText("COOVERY Crash Report", formattedReport)
                             clipboard.setPrimaryClip(clip)
                             Toast.makeText(context, R.string.crash_copied_toast, Toast.LENGTH_LONG).show()
 

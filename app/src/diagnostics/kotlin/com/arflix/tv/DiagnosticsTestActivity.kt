@@ -14,7 +14,7 @@ class DiagnosticsTestActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val action = intent.getStringExtra("action") ?: "status"
-        setContentView(TextView(this).apply { text = "ARVIO diagnostics test: $action" })
+        setContentView(TextView(this).apply { text = "COOVERY diagnostics test: $action" })
         when (action) {
             "enable" -> {
                 DiagnosticsManager.setReportingEnabled(this, true)
@@ -25,9 +25,9 @@ class DiagnosticsTestActivity : Activity() {
                 DiagnosticsManager.setUsageEnabled(this, false)
                 DiagnosticsManager.setReportingEnabled(this, false)
             }
-            "nonfatal" -> AppLogger.recordException(IllegalStateException("ARVIO Firebase verification nonfatal"))
+            "nonfatal" -> AppLogger.recordException(IllegalStateException("COOVERY Firebase verification nonfatal"))
             "crash" -> Handler(Looper.getMainLooper()).postDelayed({
-                throw IllegalStateException("ARVIO Firebase verification fatal")
+                throw IllegalStateException("COOVERY Firebase verification fatal")
             }, 1_000)
         }
     }

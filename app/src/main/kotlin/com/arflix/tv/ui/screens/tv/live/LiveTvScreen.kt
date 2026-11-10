@@ -1119,10 +1119,10 @@ fun LiveTvScreen(
     // Category switches are served from prebuilt buckets. Favorites and
     // recents remain ordered dynamic lists, but they are simple id lookups.
     val filteredChannelsState = remember { mutableStateOf<List<EnrichedChannel>>(emptyList()) }
-    // Manual channel order per category, set in ARVIO Web Settings and synced through the cloud.
+    // Manual channel order per category, set in COOVERY Web Settings and synced through the cloud.
     val manualChannelOrder by remember(viewModel) { viewModel.iptvRepository.observeChannelOrder() }
         .collectAsStateWithLifecycle(initialValue = emptyMap())
-    // Category names set in ARVIO Web Settings; keys keep the playlist's own names.
+    // Category names set in COOVERY Web Settings; keys keep the playlist's own names.
     val liveGroupNames by remember(viewModel) { viewModel.iptvRepository.observeGroupNames() }
         .collectAsStateWithLifecycle(initialValue = emptyMap())
     var filteredChannelsCategoryKey by remember { mutableStateOf<String?>(null) }
@@ -2338,7 +2338,7 @@ fun LiveTvScreen(
     // A second selection on the currently playing programme offers Watch Live
     // and, only after a confident movie/series match, Stream Now.
     var programActionDialog by remember { mutableStateOf<ProgramActionData?>(null) }
-    var programActionVodMatch by remember { mutableStateOf<ArvioMediaItem?>(null) }
+    var programActionVodMatch by remember { mutableStateOf<COOVERYMediaItem?>(null) }
     var programActionLookupInProgress by remember { mutableStateOf(false) }
     val programActionLookupGuard = remember { EpgVodLookupGuard() }
     val programActionLookupJob = remember { arrayOf<Job?>(null) }

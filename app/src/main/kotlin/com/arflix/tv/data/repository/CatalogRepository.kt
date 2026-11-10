@@ -1562,7 +1562,7 @@ class CatalogRepository @Inject constructor(
             try {
                 val request = Request.Builder()
                     .url(url)
-                    .header("User-Agent", OkHttpProvider.userAgentOr("Mozilla/5.0 (Android TV; ARVIO)"))
+                    .header("User-Agent", OkHttpProvider.userAgentOr("Mozilla/5.0 (Android TV; COOVERY)"))
                     .apply { if (fresh) cacheControl(CacheControl.FORCE_NETWORK) }
                     .build()
                 okHttpClient.newCall(request).execute().use { response ->

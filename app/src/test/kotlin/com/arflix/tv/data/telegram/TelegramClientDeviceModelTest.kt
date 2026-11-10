@@ -9,35 +9,35 @@ class TelegramClientDeviceModelTest {
     @Test
     fun tvWithBlankModelReturnsArvioTv() {
         val model = resolveTelegramDeviceModel(DeviceType.TV, rawModel = "")
-        assertThat(model).isEqualTo("ARVIO TV")
+        assertThat(model).isEqualTo("COOVERY TV")
     }
 
     @Test
     fun tvWithGenericModelReturnsArvioTv() {
-        assertThat(resolveTelegramDeviceModel(DeviceType.TV, rawModel = "Android TV")).isEqualTo("ARVIO TV")
-        assertThat(resolveTelegramDeviceModel(DeviceType.TV, rawModel = "Google TV")).isEqualTo("ARVIO TV")
-        assertThat(resolveTelegramDeviceModel(DeviceType.TV, rawModel = "generic")).isEqualTo("ARVIO TV")
-        assertThat(resolveTelegramDeviceModel(DeviceType.TV, rawModel = "unknown")).isEqualTo("ARVIO TV")
-        assertThat(resolveTelegramDeviceModel(DeviceType.TV, rawModel = "sdk_gphone64_arm64")).isEqualTo("ARVIO TV")
-        assertThat(resolveTelegramDeviceModel(DeviceType.TV, rawModel = "Android SDK built for x86")).isEqualTo("ARVIO TV")
+        assertThat(resolveTelegramDeviceModel(DeviceType.TV, rawModel = "Android TV")).isEqualTo("COOVERY TV")
+        assertThat(resolveTelegramDeviceModel(DeviceType.TV, rawModel = "Google TV")).isEqualTo("COOVERY TV")
+        assertThat(resolveTelegramDeviceModel(DeviceType.TV, rawModel = "generic")).isEqualTo("COOVERY TV")
+        assertThat(resolveTelegramDeviceModel(DeviceType.TV, rawModel = "unknown")).isEqualTo("COOVERY TV")
+        assertThat(resolveTelegramDeviceModel(DeviceType.TV, rawModel = "sdk_gphone64_arm64")).isEqualTo("COOVERY TV")
+        assertThat(resolveTelegramDeviceModel(DeviceType.TV, rawModel = "Android SDK built for x86")).isEqualTo("COOVERY TV")
     }
 
     @Test
     fun tvWithSpecificHardwareModelAppendsModelAndTvTag() {
         val model = resolveTelegramDeviceModel(DeviceType.TV, rawModel = "Chromecast")
-        assertThat(model).isEqualTo("ARVIO TV (Chromecast)")
+        assertThat(model).isEqualTo("COOVERY TV (Chromecast)")
     }
 
     @Test
     fun tvWithModelAlreadyContainingTvDoesNotDuplicateTv() {
         val model = resolveTelegramDeviceModel(DeviceType.TV, rawModel = "SHIELD Android TV")
-        assertThat(model).isEqualTo("ARVIO (SHIELD Android TV)")
+        assertThat(model).isEqualTo("COOVERY (SHIELD Android TV)")
     }
 
     @Test
     fun tvWithFireStickHardwareModel() {
         val model = resolveTelegramDeviceModel(DeviceType.TV, rawModel = "AFTMM")
-        assertThat(model).isEqualTo("ARVIO TV (AFTMM)")
+        assertThat(model).isEqualTo("COOVERY TV (AFTMM)")
     }
 
     @Test
@@ -47,7 +47,7 @@ class TelegramClientDeviceModelTest {
             rawModel = "Chromecast",
             customDeviceName = "Living Room TV"
         )
-        assertThat(model).isEqualTo("ARVIO (Living Room TV)")
+        assertThat(model).isEqualTo("COOVERY (Living Room TV)")
     }
 
     @Test
@@ -57,28 +57,28 @@ class TelegramClientDeviceModelTest {
             rawModel = "Chromecast",
             customDeviceName = "Android TV"
         )
-        assertThat(model).isEqualTo("ARVIO TV (Chromecast)")
+        assertThat(model).isEqualTo("COOVERY TV (Chromecast)")
     }
 
     @Test
     fun tabletReturnsArvioTablet() {
         assertThat(resolveTelegramDeviceModel(DeviceType.TABLET, rawModel = ""))
-            .isEqualTo("ARVIO Tablet")
+            .isEqualTo("COOVERY Tablet")
         assertThat(resolveTelegramDeviceModel(DeviceType.TABLET, rawModel = "SM-X800"))
-            .isEqualTo("ARVIO Tablet (SM-X800)")
+            .isEqualTo("COOVERY Tablet (SM-X800)")
     }
 
     @Test
     fun phoneReturnsArvioWithModel() {
         assertThat(resolveTelegramDeviceModel(DeviceType.PHONE, rawModel = ""))
-            .isEqualTo("ARVIO")
+            .isEqualTo("COOVERY")
         assertThat(resolveTelegramDeviceModel(DeviceType.PHONE, rawModel = "Pixel 8"))
-            .isEqualTo("ARVIO (Pixel 8)")
+            .isEqualTo("COOVERY (Pixel 8)")
     }
 
     @Test
     fun modelAlreadyContainingArvioIsPreserved() {
-        assertThat(resolveTelegramDeviceModel(DeviceType.TV, rawModel = "ARVIO TV Stick"))
-            .isEqualTo("ARVIO TV Stick")
+        assertThat(resolveTelegramDeviceModel(DeviceType.TV, rawModel = "COOVERY TV Stick"))
+            .isEqualTo("COOVERY TV Stick")
     }
 }

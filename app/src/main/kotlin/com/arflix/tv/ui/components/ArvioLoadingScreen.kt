@@ -88,7 +88,7 @@ fun ArvioLoadingScreen(
         ) {
             Image(
                 painter = painterResource(id = R.drawable.arvio_loading_logo),
-                contentDescription = "ARVIO",
+                contentDescription = "COOVERY",
                 contentScale = ContentScale.Fit,
                 modifier = Modifier
                     .fillMaxWidth(0.58f)

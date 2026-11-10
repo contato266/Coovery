@@ -85,7 +85,7 @@ class TelegramSourceResolver @Inject constructor(
         if (imdbId.isNotBlank()) "$imdbId:${season ?: ""}:${episode ?: ""}"
         else "$title:${season ?: ""}:${episode ?: ""}"
 
-    fun isEnabled(): Boolean = repository.isAuthenticated()
+    fun isEnabled(): Boolean = false
 
     /** See [TelegramRepository.searchOnClickOnly]. */
     suspend fun searchOnClickOnly(): Boolean = repository.searchOnClickOnly.first()

@@ -184,15 +184,15 @@ class StreamIntegrationRepositoryTest {
         val repo = createRepository()
         val configs = repo.getConfigs()
 
-        assertEquals(5, configs.size)
+        assertEquals(4, configs.size)
         assertEquals(StreamIntegrationType.HOME_SERVER, configs[0].type)
         assertEquals(StreamIntegrationType.STREMIO_ADDONS, configs[1].type)
         assertEquals(StreamIntegrationType.PLUGINS, configs[2].type)
-        assertEquals(StreamIntegrationType.TELEGRAM, configs[3].type)
-        assertEquals(StreamIntegrationType.IPTV_VOD, configs[4].type)
+        assertEquals(StreamIntegrationType.IPTV_VOD, configs[3].type)
+        assertTrue(configs.none { it.type == StreamIntegrationType.TELEGRAM })
 
         assertTrue(configs.all { it.isEnabled })
-        assertEquals(listOf(0, 1, 2, 3, 4), configs.map { it.priority })
+        assertEquals(listOf(0, 1, 2, 3), configs.map { it.priority })
     }
 
     @Test
@@ -223,17 +223,18 @@ class StreamIntegrationRepositoryTest {
     fun togglingIntegrationUpdatesEnabledState() = runBlocking {
         val repo = createRepository()
 
-        assertTrue(repo.isIntegrationEnabled(StreamIntegrationType.TELEGRAM))
-
-        repo.toggleIntegration(StreamIntegrationType.TELEGRAM)
         assertFalse(repo.isIntegrationEnabled(StreamIntegrationType.TELEGRAM))
+        assertTrue(repo.isIntegrationEnabled(StreamIntegrationType.PLUGINS))
+
+        repo.toggleIntegration(StreamIntegrationType.PLUGINS)
+        assertFalse(repo.isIntegrationEnabled(StreamIntegrationType.PLUGINS))
 
         val configs = repo.getConfigs()
-        val telegramConfig = configs.first { it.type == StreamIntegrationType.TELEGRAM }
-        assertFalse(telegramConfig.isEnabled)
+        val pluginsConfig = configs.first { it.type == StreamIntegrationType.PLUGINS }
+        assertFalse(pluginsConfig.isEnabled)
 
-        repo.toggleIntegration(StreamIntegrationType.TELEGRAM)
-        assertTrue(repo.isIntegrationEnabled(StreamIntegrationType.TELEGRAM))
+        repo.toggleIntegration(StreamIntegrationType.PLUGINS)
+        assertTrue(repo.isIntegrationEnabled(StreamIntegrationType.PLUGINS))
     }
 
     @Test
@@ -241,7 +242,7 @@ class StreamIntegrationRepositoryTest {
         val repo = createRepository()
         val items = repo.getProviderItems()
 
-        assertEquals(5, items.size)
+        assertEquals(4, items.size)
         assertEquals("homeserver:conn_emby_1", items[0].id)
         assertEquals("Emby Server", items[0].displayName)
         assertEquals(StreamIntegrationType.HOME_SERVER, items[0].type)
@@ -254,13 +255,9 @@ class StreamIntegrationRepositoryTest {
         assertEquals("SoraStream Repo", items[2].displayName)
         assertEquals(StreamIntegrationType.PLUGINS, items[2].type)
 
-        assertEquals("telegram", items[3].id)
-        assertEquals("Telegram", items[3].displayName)
-        assertEquals(StreamIntegrationType.TELEGRAM, items[3].type)
-
-        assertEquals("iptv_playlist:playlist_1", items[4].id)
-        assertEquals("Premium IPTV", items[4].displayName)
-        assertEquals(StreamIntegrationType.IPTV_VOD, items[4].type)
+        assertEquals("iptv_playlist:playlist_1", items[3].id)
+        assertEquals("Premium IPTV", items[3].displayName)
+        assertEquals(StreamIntegrationType.IPTV_VOD, items[3].type)
     }
 
     @Test
@@ -325,23 +322,21 @@ class StreamIntegrationRepositoryTest {
 
         val defaultIds = repo.getUnifiedSourceOrderedIds().first()
 
-        // In default order: HomeServer -> Stremio -> Plugins -> Telegram -> IPTV VOD
+        // In default order: HomeServer -> Stremio -> Plugins -> IPTV VOD
         val homeServerPos = defaultIds.indexOf("home_server")
         val torrentioPos = defaultIds.indexOf("torrentio")
         val pluginPos = defaultIds.indexOf("plugin_superstream")
-        val telegramPos = defaultIds.indexOf("telegram_native")
         val iptvVodPos = defaultIds.indexOf("iptv_xtream_vod")
 
         assertTrue("home_server must exist in defaultIds", homeServerPos >= 0)
         assertTrue("torrentio must exist in defaultIds", torrentioPos >= 0)
         assertTrue("plugin_superstream must exist in defaultIds", pluginPos >= 0)
-        assertTrue("telegram_native must exist in defaultIds", telegramPos >= 0)
+        assertFalse(defaultIds.contains("telegram_native"))
         assertTrue("iptv_xtream_vod must exist in defaultIds", iptvVodPos >= 0)
 
         assertTrue(homeServerPos < torrentioPos)
         assertTrue(torrentioPos < pluginPos)
-        assertTrue(pluginPos < telegramPos)
-        assertTrue(telegramPos < iptvVodPos)
+        assertTrue(pluginPos < iptvVodPos)
 
         // Subtitle addons should not be included in stream ordered IDs
         assertFalse(defaultIds.contains("opensubtitles"))
@@ -356,10 +351,7 @@ class StreamIntegrationRepositoryTest {
         assertTrue("home_server must exist in reorderedIds", newHomeServerPos >= 0)
         assertTrue(newTorrentioPos < newHomeServerPos)
 
-        // Disable Telegram and check it's excluded from source IDs
-        repo.toggleIntegration(StreamIntegrationType.TELEGRAM)
-        val withTelegramDisabled = repo.getUnifiedSourceOrderedIds().first()
-        assertFalse(withTelegramDisabled.contains("telegram_native"))
+        assertFalse(repo.getUnifiedSourceOrderedIds().first().contains("telegram_native"))
     }
 
     @Test

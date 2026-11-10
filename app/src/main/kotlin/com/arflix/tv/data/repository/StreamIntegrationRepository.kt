@@ -36,6 +36,7 @@ class StreamIntegrationRepository @Inject constructor(
     private val pluginManagerProvider: Provider<PluginManager>,
     private val homeServerRepositoryProvider: Provider<HomeServerRepository>,
     private val iptvRepositoryProvider: Provider<IptvRepository>,
+    @Suppress("unused")
     private val telegramRepositoryProvider: Provider<TelegramRepository>? = null,
     private val invalidationBus: CloudSyncInvalidationBus
 ) {
@@ -70,7 +71,9 @@ class StreamIntegrationRepository @Inject constructor(
                     emptyList()
                 }
 
-                val allTypes = (parsedOrder + StreamIntegrationType.DEFAULT_ORDER).distinct()
+                val allTypes = (parsedOrder + StreamIntegrationType.DEFAULT_ORDER)
+                    .distinct()
+                    .filter { it != StreamIntegrationType.TELEGRAM }
                 allTypes.mapIndexed { index, type ->
                     val isEnabled = prefs[enabledKey(profileId, type)] ?: true
                     StreamIntegrationConfig(
@@ -96,6 +99,7 @@ class StreamIntegrationRepository @Inject constructor(
     }
 
     suspend fun isIntegrationEnabled(type: StreamIntegrationType): Boolean {
+        if (type == StreamIntegrationType.TELEGRAM) return false
         val profileId = profileManager.getProfileId()
         val prefs = context.settingsDataStore.data.first()
         val macroEnabled = prefs[enabledKey(profileId, type)]
@@ -263,23 +267,7 @@ class StreamIntegrationRepository @Inject constructor(
                     )
                 }
 
-                // 4. Telegram
-                val isTelegramAuth = runCatching { telegramRepositoryProvider?.get()?.isAuthenticated() == true }.getOrDefault(false)
-                if (isTelegramAuth) {
-                    add(
-                        StreamProviderItem(
-                            id = "telegram",
-                            rawProviderKeys = listOf("telegram_native", "telegram"),
-                            displayName = "Telegram",
-                            subtitle = "Direct streaming",
-                            type = StreamIntegrationType.TELEGRAM,
-                            isEnabled = true,
-                            targetConfigId = "telegram"
-                        )
-                    )
-                }
-
-                // 5. IPTV VOD
+                // IPTV VOD. Telegram is no longer offered as a source.
                 val vodPlaylists = iptvConfig.playlists.ifEmpty { iptvRepository.activePlaylists(iptvConfig) }
                     .filter { (it.importVod ?: true) || (it.importSeries ?: true) }
                 val vodPortals = iptvConfig.stalkerPortals.filter { (it.importVod ?: true) || (it.importSeries ?: true) }

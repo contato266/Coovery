@@ -42,7 +42,6 @@ enum class StreamIntegrationType(
             HOME_SERVER,
             STREMIO_ADDONS,
             PLUGINS,
-            TELEGRAM,
             IPTV_VOD
         )
 

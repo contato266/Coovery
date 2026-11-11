@@ -336,7 +336,7 @@
     <string name="settings_label_email">E-mail</string>
     <string name="settings_label_password">Mot de passe</string>
     <string name="settings_btn_create">Créer</string>
-    <string name="settings_cloud_signin_hint_touch">Saisissez votre e-mail et votre mot de passe pour vous connecter.</string>
+    <string name="settings_cloud_signin_hint_touch">Connectez-vous avec un compte créé dans Firebase.</string>
     <string name="settings_cloud_signin_hint_tv">Astuce : utilisez le clavier TV. D-pad pour naviguer.</string>
     <string name="settings_cloud_pairing_title">Appairage COOVERY Cloud</string>
     <string name="settings_pair_signin_link_device">Connectez-vous avec votre e-mail et votre mot de passe pour lier cet appareil.</string>

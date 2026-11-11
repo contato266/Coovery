@@ -343,12 +343,12 @@
     <string name="settings_add_filter">Adicionar filtro</string>
     <string name="settings_label_device_preset_name">Dispositivo / Nome do preset</string>
     <string name="settings_label_regex_pattern">Padrão Regex</string>
-    <string name="settings_cloud_signin_title">Login no COOVERY Cloud</string>
+    <string name="settings_cloud_signin_title">Entrar com Firebase</string>
     <string name="settings_label_email">E-mail</string>
     <string name="settings_label_password">Senha</string>
     <string name="settings_btn_create">Criar</string>
-    <string name="settings_cloud_signin_hint_touch">Digite seu e-mail e senha para entrar.</string>
-    <string name="settings_cloud_signin_hint_tv">Dica: Use o teclado da TV. Use o direcional para navegar.</string>
+    <string name="settings_cloud_signin_hint_touch">Entre com uma conta criada no Firebase.</string>
+    <string name="settings_cloud_signin_hint_tv">Entre com uma conta criada no Firebase. Use o teclado da TV e o direcional.</string>
     <string name="settings_cloud_pairing_title">Pareamento do COOVERY Cloud</string>
     <string name="settings_pair_signin_link_device">Entre com seu e-mail e senha para vincular este dispositivo.</string>
     <string name="settings_pair_scan_qr_link_tv">Escaneie este código QR para entrar e vincular esta TV.</string>
@@ -1384,6 +1384,10 @@
     <string name="auth_invalid_credentials">E-mail ou senha inválidos.</string>
     <string name="auth_verify_email">Por favor, confirme seu e-mail para continuar.</string>
     <string name="auth_signin_failed">Falha no login</string>
+    <string name="firebase_account_rejected">E-mail ou senha não conferem com uma conta do Firebase.</string>
+    <string name="firebase_account_disabled">Esta conta do Firebase está desativada.</string>
+    <string name="firebase_auth_disabled">Ative o login por e-mail em Firebase Authentication.</string>
+    <string name="firebase_accounts_owner_only">As contas são criadas no Firebase. O app só entra.</string>
     <string name="auth_signup_failed">Falha no cadastro</string>
     <string name="auth_unable_create_account">Não foi possível criar a conta</string>
     <string name="homeserver_invalid_code_url">URL de login por código inválida</string>

@@ -412,7 +412,7 @@
     <string name="settings_label_email">E-Mail-Adresse</string>
     <string name="settings_label_password">Passwort</string>
     <string name="settings_btn_create">Erstellen</string>
-    <string name="settings_cloud_signin_hint_touch">Gib deine E-Mail-Adresse und dein Passwort ein, um dich anzumelden.</string>
+    <string name="settings_cloud_signin_hint_touch">Melde dich mit einem Konto an, das in Firebase angelegt wurde.</string>
     <string name="settings_cloud_signin_hint_tv">Tipp: TV-Tastatur verwenden. D-Pad zum Navigieren.</string>
     <string name="settings_cloud_pairing_title">COOVERY-Cloud-Kopplung</string>
     <string name="settings_pair_signin_link_device">Melde dich mit deiner E-Mail-Adresse und deinem Passwort an, um dieses Gerät zu verknüpfen.</string>

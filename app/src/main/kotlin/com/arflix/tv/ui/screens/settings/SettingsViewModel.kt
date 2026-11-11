@@ -4157,29 +4157,7 @@ class SettingsViewModel @Inject constructor(
     }
 
     fun startCloudAuth() {
-        if (_uiState.value.isLoggedIn || _uiState.value.isCloudAuthWorking) return
-        viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isCloudAuthWorking = true)
-            ensureCloudAuthSession(startPolling = true)
-                .onSuccess {
-                    _uiState.value = _uiState.value.copy(
-                        isCloudAuthWorking = false,
-                        showCloudPairDialog = true,
-                        cloudUserCode = cloudUserCode,
-                        cloudVerificationUrl = cloudVerificationUrl
-                    )
-                }
-                .onFailure { error ->
-                    clearCloudAuthSession()
-                    _uiState.value = _uiState.value.copy(
-                        isCloudAuthWorking = false,
-                        toastMessage = error.message.orMessage(
-                            SettingsMessage.Res(R.string.cloud_login_failed_start)
-                        ),
-                        toastType = ToastType.ERROR
-                    )
-                }
-        }
+        openCloudEmailPasswordDialog()
     }
 
     fun cancelCloudAuth() {
@@ -4195,32 +4173,11 @@ class SettingsViewModel @Inject constructor(
 
     fun openCloudEmailPasswordDialog() {
         if (_uiState.value.isLoggedIn) return
-        viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(
-                showCloudPairDialog = false,
-                showCloudEmailPasswordDialog = false,
-                isCloudAuthWorking = true
-            )
-            ensureCloudAuthSession(startPolling = false)
-                .onSuccess {
-                    _uiState.value = _uiState.value.copy(
-                        showCloudPairDialog = false,
-                        showCloudEmailPasswordDialog = true,
-                        isCloudAuthWorking = false
-                    )
-                }
-                .onFailure { error ->
-                    clearCloudAuthSession()
-                    _uiState.value = _uiState.value.copy(
-                        showCloudEmailPasswordDialog = false,
-                        isCloudAuthWorking = false,
-                        toastMessage = error.message.orMessage(
-                            SettingsMessage.Res(R.string.cloud_signin_failed_start)
-                        ),
-                        toastType = ToastType.ERROR
-                    )
-                }
-        }
+        _uiState.value = _uiState.value.copy(
+            showCloudPairDialog = false,
+            showCloudEmailPasswordDialog = true,
+            isCloudAuthWorking = false
+        )
     }
 
     fun closeCloudEmailPasswordDialog() {
@@ -4248,52 +4205,36 @@ class SettingsViewModel @Inject constructor(
             return
         }
 
+        if (createAccount) {
+            _uiState.value = _uiState.value.copy(
+                toastMessage = SettingsMessage.Res(R.string.firebase_accounts_owner_only),
+                toastType = ToastType.ERROR,
+                isCloudAuthWorking = false
+            )
+            return
+        }
+
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isCloudAuthWorking = true)
-            val sessionReady = ensureCloudAuthSession(startPolling = false)
-            if (sessionReady.isFailure) {
+            val result = authRepository.signIn(trimmedEmail, password)
+            if (result.isSuccess) {
                 clearCloudAuthSession()
                 _uiState.value = _uiState.value.copy(
-                    toastMessage = sessionReady.exceptionOrNull()?.message.orMessage(
-                        SettingsMessage.Res(R.string.cloud_signin_could_not_start)
-                    ),
-                    toastType = ToastType.ERROR,
-                    isCloudAuthWorking = false
-                )
-                return@launch
-            }
-
-            val userCode = cloudUserCode
-            if (userCode.isNullOrBlank()) {
-                clearCloudAuthSession()
-                _uiState.value = _uiState.value.copy(
-                    toastMessage = SettingsMessage.Res(R.string.settings_cloud_session_unavailable),
-                    toastType = ToastType.ERROR,
-                    isCloudAuthWorking = false
-                )
-                return@launch
-            }
-
-            tvDeviceAuthRepository.completeWithEmailPassword(
-                userCode = userCode,
-                email = trimmedEmail,
-                password = password,
-                intent = if (createAccount) "signup" else "signin"
-            ).onSuccess {
-                _uiState.value = _uiState.value.copy(
-                    toastMessage = SettingsMessage.Res(R.string.settings_waiting_for_approval),
-                    toastType = ToastType.INFO,
+                    isCloudAuthWorking = false,
+                    showCloudPairDialog = false,
                     showCloudEmailPasswordDialog = false,
-                    isCloudAuthWorking = true
+                    cloudUserCode = null,
+                    cloudVerificationUrl = null,
+                    toastMessage = SettingsMessage.Res(R.string.settings_cloud_signed_in),
+                    toastType = ToastType.SUCCESS
                 )
-                startCloudPolling()
-            }.onFailure { error ->
+            } else {
                 _uiState.value = _uiState.value.copy(
-                    toastMessage = error.message.orMessage(
-                        SettingsMessage.Res(R.string.tv_link_failed)
+                    isCloudAuthWorking = false,
+                    toastMessage = result.exceptionOrNull()?.message.orMessage(
+                        SettingsMessage.Res(R.string.firebase_account_rejected)
                     ),
-                    toastType = ToastType.ERROR,
-                    isCloudAuthWorking = false
+                    toastType = ToastType.ERROR
                 )
             }
         }

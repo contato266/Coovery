@@ -684,34 +684,7 @@ class ProfileViewModel @Inject constructor(
     }
 
     fun startCloudAuth() {
-        if (_uiState.value.isCloudConnected || _uiState.value.isCloudAuthWorking || cloudAuthJob?.isActive == true) return
-        _uiState.update { it.copy(isCloudAuthWorking = true, showToast = false) }
-        cloudAuthJob = viewModelScope.launch {
-            val result = ensureCloudAuthSession(startPolling = true)
-            currentCoroutineContext().ensureActive()
-            result
-                .onSuccess {
-                    _uiState.update {
-                        it.copy(
-                            isCloudAuthWorking = false,
-                            showCloudPairDialog = true,
-                            cloudUserCode = cloudUserCode,
-                            cloudVerificationUrl = cloudVerificationUrl
-                        )
-                    }
-                }
-                .onFailure { error ->
-                    clearCloudAuthSession()
-                    _uiState.update {
-                        it.copy(
-                            isCloudAuthWorking = false,
-                            toastMessage = error.message ?: context.getString(R.string.cloud_login_failed_start),
-                            toastType = ToastType.ERROR,
-                            showToast = true
-                        )
-                    }
-                }
-        }
+        openCloudEmailPasswordDialog()
     }
 
     fun openCloudEmailPasswordDialog() {
@@ -759,37 +732,15 @@ class ProfileViewModel @Inject constructor(
             showToast(context.getString(R.string.settings_cloud_password_required), ToastType.ERROR)
             return
         }
+        if (createAccount) {
+            showToast(context.getString(R.string.firebase_accounts_owner_only), ToastType.ERROR)
+            return
+        }
 
         _uiState.update { it.copy(isCloudAuthWorking = true, showToast = false) }
         cloudAuthJob = viewModelScope.launch {
-            val userCode = cloudUserCode
-            if (!userCode.isNullOrBlank()) {
-                val result = tvDeviceAuthRepository.completeWithEmailPassword(
-                    userCode = userCode,
-                    email = trimmedEmail,
-                    password = password,
-                    intent = if (createAccount) "signup" else "signin"
-                )
-                currentCoroutineContext().ensureActive()
-                result.onSuccess {
-                    showToast(context.getString(R.string.settings_waiting_for_approval), ToastType.INFO)
-                    _uiState.update {
-                        it.copy(
-                            showCloudEmailPasswordDialog = false,
-                            isCloudAuthWorking = true
-                        )
-                    }
-                    startCloudPolling()
-                }.onFailure { error ->
-                    showToast(error.message ?: context.getString(R.string.tv_link_failed), ToastType.ERROR)
-                    _uiState.update { it.copy(isCloudAuthWorking = false) }
-                }
-            } else {
-                val result = if (createAccount) {
-                    authRepository.signUp(trimmedEmail, password)
-                } else {
-                    authRepository.signIn(trimmedEmail, password)
-                }
+            run {
+                val result = authRepository.signIn(trimmedEmail, password)
                 currentCoroutineContext().ensureActive()
                 if (result.isSuccess) {
                     onCloudAuthSuccessful()

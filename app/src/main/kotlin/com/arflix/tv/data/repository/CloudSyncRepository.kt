@@ -26,6 +26,7 @@ import com.arflix.tv.util.restoreHomePresentation
 import com.arflix.tv.util.resolveAppLanguage
 import com.arflix.tv.util.IPTV_FAVORITES_ON_HOME
 import com.arflix.tv.util.AppLogger
+import com.arflix.tv.util.Constants
 import com.arflix.tv.util.ACCENT_COLOR_KEY
 import com.arflix.tv.util.OLED_BLACK_BACKGROUND_KEY
 import com.arflix.tv.util.SKIP_PROFILE_SELECTION_KEY
@@ -1364,6 +1365,7 @@ class CloudSyncRepository @Inject constructor(
      * Returns [RestoreResult] indicating what happened.
      */
     suspend fun pullFromCloud(pushPendingLocalFirst: Boolean = true): RestoreResult = cloudSyncMutex.withLock {
+        if (!Constants.USE_NETLIFY_CLOUD_SYNC) return@withLock RestoreResult.NO_BACKUP
         val hasPendingLocalChanges = hasPendingLocalChanges()
         if (pushPendingLocalFirst && hasPendingLocalChanges) {
             AppLogger.breadcrumb(

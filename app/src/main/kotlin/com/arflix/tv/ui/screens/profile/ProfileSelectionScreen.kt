@@ -605,9 +605,6 @@ internal fun ProfileSelectionContent(
                 onSignIn = {
                     viewModel.completeCloudAuthWithEmailPassword(email, password, false)
                 },
-                onCreateAccount = {
-                    viewModel.completeCloudAuthWithEmailPassword(email, password, true)
-                },
                 onOpenPrivacy = {
                     runCatching {
                         val intent = android.content.Intent(

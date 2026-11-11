@@ -41,7 +41,13 @@ import io.github.jan.supabase.gotrue.user.UserSession
 import io.github.jan.supabase.postgrest.Postgrest
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.query.Columns
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseAuthException
+import com.google.firebase.auth.FirebaseUser
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -436,6 +442,10 @@ class AuthRepository @Inject constructor(
      */
     suspend fun checkAuthState() {
         try {
+            FirebaseAuth.getInstance().currentUser?.let { user ->
+                applyFirebaseUser(user)
+                return
+            }
             val prefs = context.authDataStore.data.first()
             val accessToken = prefs[PrefsKeys.ACCESS_TOKEN]
             val refreshToken = prefs[PrefsKeys.REFRESH_TOKEN]
@@ -570,46 +580,14 @@ class AuthRepository @Inject constructor(
             AppLogger.breadcrumb("Auth", "email_sign_in_start")
             _authState.value = AuthState.Loading
 
-            if (Constants.USE_NETLIFY_CLOUD_SYNC) {
-                val tokens = signInCloudAccountSession(normalizedEmail, password)
-                return signInWithSessionTokens(tokens.accessToken, tokens.refreshToken).also {
-                    if (it.isSuccess) {
-                        AppLogger.breadcrumb("Auth", "email_sign_in_success_netlify")
-                    }
-                }
-            }
-
-            supabase.auth.signInWith(Email) {
-                this.email = normalizedEmail
-                this.password = password
-            }
-
-            val session = supabase.auth.currentSessionOrNull()
-            val user = session?.user
-
-            if (user != null) {
-                storeSession(session)
-
-                // Load or create profile
-                var profile = loadUserProfile(user.id)
-                if (profile == null) {
-                    profile = createDefaultProfile(user.id, user.email ?: normalizedEmail)
-                }
-
-                _userProfile.value = profile
-                _authState.value = AuthState.Authenticated(user.id, user.email ?: normalizedEmail, profile)
-                AppLogger.breadcrumb("Auth", "email_sign_in_success")
-                Result.success(Unit)
-            } else {
-                val message = safeErrorMessage(null, context.getString(R.string.auth_signin_failed))
-                _authState.value = AuthState.Error(message)
-                AppLogger.breadcrumb("Auth", "email_sign_in_no_session", severity = "warning")
-                Result.failure(Exception(message))
-            }
+            val user = withContext(Dispatchers.IO) { firebaseSignIn(normalizedEmail, password) }
+            applyFirebaseUser(user)
+            AppLogger.breadcrumb("Auth", "email_sign_in_success_firebase")
+            Result.success(Unit)
         } catch (e: Exception) {
             if (e is kotlinx.coroutines.CancellationException) throw e
 
-            val message = safeErrorMessage(e, context.getString(R.string.auth_signin_failed))
+            val message = firebaseSignInMessage(e)
             _authState.value = AuthState.Error(message)
             AppLogger.breadcrumb("Auth", "email_sign_in_failed ${e::class.java.simpleName}", severity = "warning")
             Result.failure(Exception(message))
@@ -626,91 +604,54 @@ class AuthRepository @Inject constructor(
             _authState.value = AuthState.Error(message)
             return Result.failure(Exception(message))
         }
-        return try {
-            AppLogger.breadcrumb("Auth", "email_sign_up_start")
-            _authState.value = AuthState.Loading
+        val ownerOnly = context.getString(R.string.firebase_accounts_owner_only)
+        _authState.value = AuthState.Error(ownerOnly)
+        return Result.failure(Exception(ownerOnly))
+    }
 
-            val tokens = createCloudAccountSession(normalizedEmail, password)
-            signInWithSessionTokens(tokens.accessToken, tokens.refreshToken).also {
-                if (it.isSuccess) {
-                    AppLogger.breadcrumb("Auth", "email_sign_up_success")
+    private suspend fun firebaseSignIn(email: String, password: String): FirebaseUser =
+        suspendCancellableCoroutine { continuation ->
+            FirebaseAuth.getInstance()
+                .signInWithEmailAndPassword(email, password)
+                .addOnSuccessListener { result ->
+                    val user = result.user
+                    if (!continuation.isActive) return@addOnSuccessListener
+                    if (user == null) {
+                        continuation.resumeWithException(
+                            IllegalStateException(context.getString(R.string.auth_signin_failed))
+                        )
+                    } else {
+                        continuation.resume(user)
+                    }
                 }
-            }
-        } catch (e: Exception) {
-            if (e is kotlinx.coroutines.CancellationException) throw e
-
-            val message = safeErrorMessage(e, context.getString(R.string.auth_signup_failed))
-            _authState.value = AuthState.Error(message)
-            AppLogger.recordException(
-                throwable = e,
-                context = mapOf(
-                    "error_area" to "Auth",
-                    "auth_flow" to "email_sign_up",
-                    "auth_error" to message
-                )
-            )
-            Result.failure(Exception(message))
+                .addOnFailureListener { error ->
+                    if (continuation.isActive) continuation.resumeWithException(error)
+                }
         }
-    }
 
-    private data class CloudAccountSession(
-        val accessToken: String,
-        val refreshToken: String
-    )
-
-    private suspend fun signInCloudAccountSession(email: String, password: String): CloudAccountSession {
-        return requestCloudAccountSession(
-            url = Constants.AUTH_LOGIN_URL,
-            email = email,
-            password = password,
-            defaultError = context.getString(R.string.auth_signin_failed)
-        )
-    }
-
-    private suspend fun createCloudAccountSession(email: String, password: String): CloudAccountSession {
-        return requestCloudAccountSession(
-            url = Constants.CLOUD_AUTH_EMAIL_URL,
-            email = email,
-            password = password,
-            defaultError = context.getString(R.string.auth_unable_create_account)
-        )
-    }
-
-    private suspend fun requestCloudAccountSession(
-        url: String,
-        email: String,
-        password: String,
-        defaultError: String
-    ): CloudAccountSession {
-        return withContext(Dispatchers.IO) {
-            val payload = JSONObject()
-                .put("email", email)
-                .put("password", password)
-                .toString()
-
-            val request = Request.Builder()
-                .url(url)
-                .header("apikey", Constants.APP_ANON_KEY)
-                .header("Authorization", "Bearer ${Constants.APP_ANON_KEY}")
-                .post(payload.toRequestBody(jsonMediaType))
-                .build()
-
-            okHttpClient.newCall(request).execute().use { response ->
-                val body = response.body?.string().orEmpty()
-                val json = try { JSONObject(body) } catch (e: JSONException) { null }
-                if (!response.isSuccessful) {
-                    val message = cloudAuthErrorMessage(json, defaultError)
-                    throw IllegalStateException(message)
-                }
-
-                val accessToken = json?.optString("access_token").orEmpty()
-                val refreshToken = json?.optString("refresh_token").orEmpty()
-                if (accessToken.isBlank() || refreshToken.isBlank()) {
-                    throw IllegalStateException(context.getString(R.string.auth_response_incomplete))
-                }
-                CloudAccountSession(accessToken, refreshToken)
-            }
+    private suspend fun applyFirebaseUser(user: FirebaseUser) {
+        val email = user.email.orEmpty()
+        context.authDataStore.edit { prefs ->
+            prefs[PrefsKeys.USER_ID] = user.uid
+            prefs[PrefsKeys.USER_EMAIL] = email
+            prefs.remove(PrefsKeys.ACCESS_TOKEN)
+            prefs.remove(PrefsKeys.REFRESH_TOKEN)
         }
+        val profile = UserProfile(id = user.uid, email = email)
+        traktRepositoryProvider.get().setUserId(user.uid)
+        _userProfile.value = profile
+        _authState.value = AuthState.Authenticated(user.uid, email, profile)
+    }
+
+    private fun firebaseSignInMessage(error: Exception): String {
+        val code = (error as? FirebaseAuthException)?.errorCode.orEmpty()
+        val res = when {
+            code.contains("OPERATION_NOT_ALLOWED", ignoreCase = true) -> R.string.firebase_auth_disabled
+            code.contains("USER_DISABLED", ignoreCase = true) -> R.string.firebase_account_disabled
+            code.contains("NETWORK", ignoreCase = true) -> R.string.auth_signin_failed
+            else -> R.string.firebase_account_rejected
+        }
+        return context.getString(res)
     }
 
     /**
@@ -902,6 +843,7 @@ class AuthRepository @Inject constructor(
             severity = "warning"
         )
 
+        runCatching { FirebaseAuth.getInstance().signOut() }
         if (!Constants.USE_NETLIFY_CLOUD_SYNC) {
             withTimeoutOrNull(2_000L) {
                 runCatching { supabase.auth.signOut() }

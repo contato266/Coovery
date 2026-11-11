@@ -91,7 +91,6 @@ fun CloudEmailPasswordModal(
     onPasswordChange: (String) -> Unit,
     onDismiss: () -> Unit,
     onSignIn: () -> Unit,
-    onCreateAccount: () -> Unit,
     onOpenPrivacy: () -> Unit = {}
 ) {
     val context = LocalContext.current
@@ -109,7 +108,7 @@ fun CloudEmailPasswordModal(
         }
     }
 
-    // Focus order: 0 email, 1 password, 2 cancel, 3 sign in, 4 create, 5 privacy
+    // Focus order: 0 email, 1 password, 2 cancel, 3 sign in, 4 privacy
     var focusedIndex by remember { mutableIntStateOf(0) }
     val emailRequester = remember { FocusRequester() }
     val passwordRequester = remember { FocusRequester() }
@@ -147,8 +146,8 @@ fun CloudEmailPasswordModal(
                                 Key.DirectionUp -> {
                                     focusedIndex = when (focusedIndex) {
                                         1 -> 0
-                                        2, 3, 4 -> 1
-                                        5 -> 3
+                                        2, 3 -> 1
+                                        4 -> 3
                                         else -> focusedIndex
                                     }
                                     true
@@ -157,14 +156,13 @@ fun CloudEmailPasswordModal(
                                     focusedIndex = when (focusedIndex) {
                                         0 -> 1
                                         1 -> 2
-                                        2, 3, 4 -> 5
+                                        2, 3 -> 4
                                         else -> focusedIndex
                                     }
                                     true
                                 }
                                 Key.DirectionLeft -> {
                                     focusedIndex = when (focusedIndex) {
-                                        4 -> 3
                                         3 -> 2
                                         else -> focusedIndex
                                     }
@@ -173,7 +171,6 @@ fun CloudEmailPasswordModal(
                                 Key.DirectionRight -> {
                                     focusedIndex = when (focusedIndex) {
                                         2 -> 3
-                                        3 -> 4
                                         else -> focusedIndex
                                     }
                                     true
@@ -182,8 +179,7 @@ fun CloudEmailPasswordModal(
                                     when (focusedIndex) {
                                         2 -> { onDismiss(); true }
                                         3 -> { onSignIn(); true }
-                                        4 -> { onCreateAccount(); true }
-                                        5 -> { effectiveOpenPrivacy(); true }
+                                        4 -> { effectiveOpenPrivacy(); true }
                                         else -> false
                                     }
                                 }
@@ -321,29 +317,6 @@ fun CloudEmailPasswordModal(
                         )
                     }
 
-                    val isCreateFocused = focusedIndex == 4
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(
-                                color = if (isCreateFocused) SuccessGreen else Color.White.copy(alpha = 0.08f)
-                            )
-                            .clickable { onCreateAccount() }
-                            .border(
-                                width = if (isCreateFocused) 2.dp else 0.dp,
-                                color = if (isCreateFocused) SuccessGreen.copy(alpha = 0.5f) else Color.Transparent,
-                                shape = RoundedCornerShape(8.dp)
-                            )
-                            .padding(vertical = 14.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = stringResource(R.string.settings_btn_create),
-                            style = ArflixTypography.button,
-                            color = Color.White
-                        )
-                    }
                 }
 
                 Spacer(modifier = Modifier.height(12.dp))
@@ -359,8 +332,8 @@ fun CloudEmailPasswordModal(
                         .clip(RoundedCornerShape(8.dp))
                         .clickable(onClick = effectiveOpenPrivacy)
                         .border(
-                            width = if (focusedIndex == 5) 2.dp else 1.dp,
-                            color = if (focusedIndex == 5) Pink else Color.White.copy(alpha = 0.14f),
+                            width = if (focusedIndex == 4) 2.dp else 1.dp,
+                            color = if (focusedIndex == 4) Pink else Color.White.copy(alpha = 0.14f),
                             shape = RoundedCornerShape(8.dp)
                         )
                         .padding(horizontal = 16.dp, vertical = 10.dp),
@@ -369,7 +342,7 @@ fun CloudEmailPasswordModal(
                     Text(
                         text = stringResource(R.string.login_read_privacy_policy),
                         style = ArflixTypography.button,
-                        color = if (focusedIndex == 5) TextPrimary else TextSecondary
+                        color = if (focusedIndex == 4) TextPrimary else TextSecondary
                     )
                 }
 

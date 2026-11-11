@@ -184,16 +184,13 @@ class ProfileViewModelCloudAuthTest {
         coVerify(exactly = 2) { cloudSyncRepository.pullFromCloud(false) }
     }
 
-    @Test fun `new account with no backup is not a failed restore`() = runBlocking {
-        coEvery { authRepository.signUp("user@arvio.app", "validPass123") } returns Result.success(Unit)
-        coEvery { cloudSyncRepository.pullFromCloud(any()) } returns CloudSyncRepository.RestoreResult.NO_BACKUP
+    @Test fun `creating an account in the app is refused`() {
+        every { context.getString(any()) } returns "owner only"
         viewModel.completeCloudAuthWithEmailPassword("user@arvio.app", "validPass123", true)
-        val result = awaitAuthResult()
-        assertFalse(result.cloudRestoreFailed)
-        assertEquals(ToastType.SUCCESS, result.toastType)
-        assertEquals(context.getString(R.string.settings_cloud_sync_complete_no_backup_toast), result.toastMessage)
-        coVerify(exactly = 1) { authRepository.signUp("user@arvio.app", "validPass123") }
-        coVerify(exactly = 1) { cloudSyncRepository.pullFromCloud(false) }
+        assertTrue(viewModel.uiState.value.showToast)
+        assertEquals("owner only", viewModel.uiState.value.toastMessage)
+        coVerify(exactly = 0) { authRepository.signUp(any(), any()) }
+        coVerify(exactly = 0) { authRepository.signIn(any(), any()) }
     }
 
     @Test fun `unexpected restore exception is reported and remains retryable`() = runBlocking {
@@ -248,45 +245,10 @@ class ProfileViewModelCloudAuthTest {
         viewModel.cancelCloudAuth()
     }
 
-    @Test fun `late cancelled pairing session cannot reopen QR dialog`() = runBlocking {
-        val response = CompletableDeferred<Result<TvDeviceAuthSession>>()
-        val returned = CompletableDeferred<Unit>()
-        coEvery { tvDeviceAuthRepository.startSession() } coAnswers {
-            withContext(NonCancellable) { response.await().also { returned.complete(Unit) } }
-        }
-        val session = TvDeviceAuthSession("CODE", "device", "https://auth.example/", 600, 1)
-        try {
-            viewModel.startCloudAuth()
-            viewModel.cancelCloudAuth()
-            response.complete(Result.success(session))
-            withTimeout(5_000L) { returned.await() }
-            assertFalse(viewModel.uiState.value.showCloudPairDialog)
-            assertNull(viewModel.uiState.value.cloudUserCode)
-            coVerify(exactly = 0) { tvDeviceAuthRepository.pollStatus(any()) }
-        } finally {
-            response.complete(Result.success(session))
-        }
-    }
-
-    @Test fun `late cancelled approval cannot import tokens`() = runBlocking {
-        val response = CompletableDeferred<Result<TvDeviceAuthStatus>>()
-        val returned = CompletableDeferred<Unit>()
-        coEvery { tvDeviceAuthRepository.startSession() } returns
-            Result.success(TvDeviceAuthSession("CODE", "device", "https://auth.example/", 600, 1))
-        coEvery { tvDeviceAuthRepository.pollStatus(any()) } coAnswers {
-            withContext(NonCancellable) { response.await().also { returned.complete(Unit) } }
-        }
-        val approval = Result.success(TvDeviceAuthStatus(TvDeviceAuthStatusType.APPROVED, "access", "refresh"))
-        try {
-            viewModel.startCloudAuth()
-            viewModel.cancelCloudAuth()
-            response.complete(approval)
-            withTimeout(5_000L) { returned.await() }
-            coVerify(exactly = 0) { authRepository.signInWithSessionTokens(any(), any()) }
-            coVerify(exactly = 0) { cloudSyncRepository.pullFromCloud(any()) }
-        } finally {
-            response.complete(approval)
-        }
+    @Test fun `startCloudAuth opens the sign-in dialog without a pairing session`() {
+        viewModel.startCloudAuth()
+        assertTrue(viewModel.uiState.value.showCloudEmailPasswordDialog)
+        coVerify(exactly = 0) { tvDeviceAuthRepository.startSession() }
     }
 
     @Test fun `cancelling restore prevents retry and success publication`() = runBlocking {

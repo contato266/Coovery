@@ -26,6 +26,7 @@ import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -63,7 +64,6 @@ fun LoginScreen(
     val emailFocusRequester = remember { FocusRequester() }
     val passwordFocusRequester = remember { FocusRequester() }
     val buttonFocusRequester = remember { FocusRequester() }
-    val toggleFocusRequester = remember { FocusRequester() }
     val privacyFocusRequester = remember { FocusRequester() }
     val keyboardController = LocalSoftwareKeyboardController.current
     val context = LocalContext.current
@@ -119,14 +119,8 @@ fun LoginScreen(
                                     buttonFocusRequester.requestFocus()
                                     true
                                 }
-                                "button" -> {
-                                    if (isSignUpMode) privacyFocusRequester.requestFocus() else toggleFocusRequester.requestFocus()
-                                    true
-                                }
-                                "privacy" -> {
-                                    toggleFocusRequester.requestFocus()
-                                    true
-                                }
+                                "button" -> true
+                                "privacy" -> true
                                 else -> false
                             }
                         }
@@ -357,17 +351,12 @@ fun LoginScreen(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Toggle Sign In / Sign Up
-                GradientButton(
-                    onClick = { isSignUpMode = !isSignUpMode },
-                    text = if (isSignUpMode) stringResource(R.string.login_have_account) else stringResource(R.string.login_no_account),
-                    isPrimary = false,
-                    isFocused = focusedField == "toggle",
-                    enabled = !uiState.isLoading,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .focusRequester(toggleFocusRequester)
-                        .onFocusChanged { if (it.isFocused) focusedField = "toggle" }
+                Text(
+                    text = stringResource(R.string.firebase_accounts_owner_only),
+                    fontSize = 13.sp,
+                    color = Color.White.copy(alpha = 0.55f),
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth()
                 )
 
                 // Loading indicator

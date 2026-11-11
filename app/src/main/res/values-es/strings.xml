@@ -384,7 +384,7 @@
     <string name="settings_label_email">Correo electrónico</string>
     <string name="settings_label_password">Contraseña</string>
     <string name="settings_btn_create">Crear</string>
-    <string name="settings_cloud_signin_hint_touch">Introduce tu correo y contraseña para iniciar sesión.</string>
+    <string name="settings_cloud_signin_hint_touch">Entra con una cuenta creada en Firebase.</string>
     <string name="settings_cloud_signin_hint_tv">Consejo: Usa el teclado en pantalla. Usa la cruceta (D-pad) para moverte.</string>
     <string name="settings_cloud_pairing_title">Vinculación con COOVERY Cloud</string>
     <string name="settings_pair_signin_link_device">Inicia sesión con tu correo y contraseña para vincular este dispositivo.</string>

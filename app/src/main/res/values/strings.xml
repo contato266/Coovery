@@ -454,12 +454,12 @@
     <string name="settings_add_filter">Add Filter</string>
     <string name="settings_label_device_preset_name">Device / Preset Name</string>
     <string name="settings_label_regex_pattern">Regex Pattern</string>
-    <string name="settings_cloud_signin_title">COOVERY Cloud Sign-in</string>
+    <string name="settings_cloud_signin_title">Sign in with Firebase</string>
     <string name="settings_label_email">Email</string>
     <string name="settings_label_password">Password</string>
     <string name="settings_btn_create">Create</string>
-    <string name="settings_cloud_signin_hint_touch">Enter your email and password to sign in.</string>
-    <string name="settings_cloud_signin_hint_tv">Tip: Use TV keyboard. D-pad to navigate.</string>
+    <string name="settings_cloud_signin_hint_touch">Sign in with an account created in Firebase.</string>
+    <string name="settings_cloud_signin_hint_tv">Sign in with an account created in Firebase. Use the TV keyboard and D-pad.</string>
     <string name="settings_cloud_pairing_title">COOVERY Cloud Pairing</string>
     <string name="settings_pair_signin_link_device">Sign in with your email and password to link this device.</string>
     <string name="settings_pair_scan_qr_link_tv">Scan this QR code to sign in and link this TV.</string>
@@ -1846,6 +1846,10 @@
     <string name="auth_invalid_credentials">Invalid email or password.</string>
     <string name="auth_verify_email">Please verify your email to continue.</string>
     <string name="auth_signin_failed">Sign in failed</string>
+    <string name="firebase_account_rejected">That email or password does not match a Firebase account.</string>
+    <string name="firebase_account_disabled">This Firebase account is disabled.</string>
+    <string name="firebase_auth_disabled">Turn on Email/Password in Firebase Authentication.</string>
+    <string name="firebase_accounts_owner_only">Accounts are created in Firebase. This app only signs in.</string>
     <string name="auth_signup_failed">Sign up failed</string>
     <string name="auth_unable_create_account">Unable to create account</string>
     <string name="homeserver_invalid_code_url">Invalid code sign-in URL</string>

@@ -213,6 +213,12 @@
 -keep public class * extends java.lang.Exception
 -keep class com.google.firebase.crashlytics.** { *; }
 
+# firebase-auth's internal classes get merged into Moshi and other app classes.
+# The merged bytecode fails ART verification and the process dies before the UI.
+-keep class com.google.firebase.auth.** { *; }
+-keep class com.google.android.gms.internal.firebase-auth-api.** { *; }
+-keep class com.squareup.moshi.** { *; }
+
 # ============================================
 # Coil image loading
 # ============================================

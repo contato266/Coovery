@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "928893798354",
+    "project_id": "coovery",
+    "storage_bucket": "coovery.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:928893798354:android:5084e774a18dd83e19aa0b",
+        "android_client_info": {
+          "package_name": "com.coovery.tv"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBGV5eapkjphGGR7KRF3foBl7QG0oMn--4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

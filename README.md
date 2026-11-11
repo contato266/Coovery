@@ -1,3 +1,5 @@
+> **Coovery** é o app deste repositório. O código parte do [ARVIO](https://github.com/ProdigyV21/ARVIO) no commit `a95104d`, sob a Apache License 2.0. O pacote Android é `com.coovery.tv`, o nome na tela é Coovery e a versão é `1.0.9` (versionCode 10). O plugin WordPress em `wordpress/coovery-fontes` cadastra a URL de cada filme e episódio no coovery.com.br e só entrega essa URL para quem entrou no Firebase. A atualização pelo GitHub aponta para `contato266/Coovery`. O arquivo `app/google-services.json` aponta para o projeto Firebase `coovery`. A chave TMDB fica em `secrets.properties`, fora do Git. O texto abaixo é o README original do ARVIO.
+
 <div align="center">
 
   <img src="web/public/arvio-logo.svg" alt="ARVIO" width="96" />

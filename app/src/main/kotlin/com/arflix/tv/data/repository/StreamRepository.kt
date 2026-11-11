@@ -351,7 +351,8 @@ class StreamRepository @Inject constructor(
     private val telegramSourceResolver: TelegramSourceResolver,
     private val streamIntegrationRepository: StreamIntegrationRepository,
     private val youTubeExtractor: InAppYouTubeExtractor = InAppYouTubeExtractor(),
-    private val partnerDelivery: dagger.Lazy<PartnerDeliveryRepository>? = null
+    private val partnerDelivery: dagger.Lazy<PartnerDeliveryRepository>? = null,
+    private val cooveryFontes: CooveryFontesRepository? = null
 ) {
     private val gson = Gson()
     private val TAG = "StreamRepository"
@@ -3085,7 +3086,8 @@ class StreamRepository @Inject constructor(
         originalTitle: String? = null,
         providerId: String? = null
     ): List<StreamSource> = withContext(Dispatchers.IO) {
-        withTimeoutOrNull(timeoutMs.coerceIn(500L, 90_000L)) {
+        val registered = runCatching { cooveryFontes?.movie(tmdbId).orEmpty() }.getOrDefault(emptyList())
+        val iptv = withTimeoutOrNull(timeoutMs.coerceIn(500L, 90_000L)) {
             runCatching {
                 iptvRepository.findMovieVodSources(
                     title = title,
@@ -3107,6 +3109,7 @@ class StreamRepository @Inject constructor(
                 )
             }.getOrDefault(emptyList())
         }.orEmpty()
+        registered + iptv
     }
 
     /** Hands messages an addon sent instead of sources to the running search's [AddonNoticeSink]. */
@@ -3690,7 +3693,10 @@ class StreamRepository @Inject constructor(
         originalTitle: String? = null,
         providerId: String? = null
     ): List<StreamSource> = withContext(Dispatchers.IO) {
-        withPartialVodResults(timeoutMs.coerceIn(500L, 90_000L)) { onSources ->
+        val registered = runCatching {
+            cooveryFontes?.episode(tmdbId, season, episode).orEmpty()
+        }.getOrDefault(emptyList())
+        val iptv = withPartialVodResults(timeoutMs.coerceIn(500L, 90_000L)) { onSources ->
             runCatching {
                 iptvRepository.findEpisodeVodSources(
                     title = title,
@@ -3717,6 +3723,7 @@ class StreamRepository @Inject constructor(
                 )
             }.getOrThrow()
         }
+        registered + iptv
     }
 
     suspend fun prefetchEpisodeVod(

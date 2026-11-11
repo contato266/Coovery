@@ -421,15 +421,25 @@ private fun PlayerScreenContent(args: PlayerScreenArgs, viewModel: PlayerViewMod
     val isLowRamPlaybackDevice = remember(playbackActivityManager) {
         playbackActivityManager?.isLowRamDevice == true
     }
-    val isConstrainedPlaybackDevice = remember(deviceType, isLowRamPlaybackDevice, playbackMemoryClassMb) {
-        deviceType == com.arflix.tv.util.DeviceType.TV &&
-            (isLowRamPlaybackDevice || playbackMemoryClassMb <= 384)
+    val isTvPlaybackDevice = deviceType == com.arflix.tv.util.DeviceType.TV
+    val isConstrainedPlaybackDevice = remember(isTvPlaybackDevice, isLowRamPlaybackDevice, playbackMemoryClassMb) {
+        isTvPlaybackDevice && (isLowRamPlaybackDevice || playbackMemoryClassMb <= 384)
     }
-    val playbackBufferProfile = remember(isLowRamPlaybackDevice, playbackMemoryClassMb, deviceType) {
+    val playbackBufferProfile = remember(
+        isLowRamPlaybackDevice,
+        playbackMemoryClassMb,
+        isTvPlaybackDevice,
+        playbackActivityManager
+    ) {
         buildPlaybackBufferProfile(
-            memoryClassMb = playbackMemoryClassMb,
+            memoryClassMb = playbackBufferMemoryClassMb(
+                memoryClassMb = playbackMemoryClassMb,
+                largeMemoryClassMb = playbackActivityManager?.largeMemoryClass ?: playbackMemoryClassMb,
+                isLowRamDevice = isLowRamPlaybackDevice,
+                isTvDevice = isTvPlaybackDevice
+            ),
             isLowRamDevice = isLowRamPlaybackDevice,
-            isTvDevice = deviceType == com.arflix.tv.util.DeviceType.TV
+            isTvDevice = isTvPlaybackDevice
         )
     }
     // No device-name decoder guessing — matches NuvioTV, which is hardware-first for video and
@@ -1303,7 +1313,7 @@ private fun PlayerScreenContent(args: PlayerScreenArgs, viewModel: PlayerViewMod
         }
     }
 
-    val exoPlayer = remember(isConstrainedPlaybackDevice, preferExtensionDecoder, playbackBufferProfile) {
+    val exoPlayer = remember(isConstrainedPlaybackDevice, preferExtensionDecoder, playbackBufferProfile, isTvPlaybackDevice) {
         val loadControl = DefaultLoadControl.Builder()
             .setBufferDurationsMs(
                 playbackBufferProfile.minBufferMs,
@@ -1359,16 +1369,20 @@ private fun PlayerScreenContent(args: PlayerScreenArgs, viewModel: PlayerViewMod
                         .setExceedVideoConstraintsIfNecessary(allowVideoExceedCodecCapabilities)
                         .setExceedAudioConstraintsIfNecessary(allowAudioExceedCodecCapabilities)
                         .setExceedRendererCapabilitiesIfNecessary(allowRendererExceedCodecCapabilities)
+                        // Tunneled playback freezes the picture on several Android TV firmwares
+                        // while the same file keeps playing on a phone.
+                        .setTunnelingEnabled(!isTvPlaybackDevice)
                         .build()
                 }
             )
             .setAudioAttributes(
-                // Configure audio attributes for movie/TV playback
+                // Configure audio attributes for movie/TV playback.
+                // A TV often reports focus loss at startup and ExoPlayer then pauses forever.
                 androidx.media3.common.AudioAttributes.Builder()
                     .setUsage(androidx.media3.common.C.USAGE_MEDIA)
                     .setContentType(androidx.media3.common.C.AUDIO_CONTENT_TYPE_MOVIE)
                     .build(),
-                /* handleAudioFocus = */ true
+                /* handleAudioFocus = */ !isTvPlaybackDevice
             )
             .build().apply {
                 // Ensure volume is at maximum
@@ -4317,14 +4331,19 @@ private fun PlayerScreenContent(args: PlayerScreenArgs, viewModel: PlayerViewMod
             switchNotice = switchNotice
         )
 
-        // Buffering indicator - only show after playback has started (mid-stream buffering)
-        // Initial buffering is handled by the main loading screen above
+        // Mid-playback buffering keeps the picture on screen, the same as the phone player.
+        // A full-screen logo here covered the frame and looked like the TV had frozen while
+        // the file was still loading ahead.
         if (isBuffering && hasPlaybackStarted && uiState.selectedStreamUrl != null && !isTouchDevice) {
             Box(
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center
             ) {
-                PulsingLogo(logoUrl = uiState.logoUrl, title = uiState.title)
+                androidx.compose.material3.CircularProgressIndicator(
+                    color = Color.White,
+                    strokeWidth = 3.dp,
+                    modifier = Modifier.size(42.dp)
+                )
             }
         }
 
@@ -5193,7 +5212,15 @@ private fun PlayerScreenContent(args: PlayerScreenArgs, viewModel: PlayerViewMod
                                 val barHeight = if (trackbarFocused) 8.dp else if (isTouchDevice) 6.dp else 4.dp
                                 Box(modifier = Modifier.fillMaxWidth().height(barHeight).background(Color.White.copy(alpha = if (trackbarFocused) 0.25f else 0.15f), RoundedCornerShape(8.dp)))
                                 val frac = if (duration > 0) (controlsPreviewPosition.toFloat() / duration.toFloat()).coerceIn(0f, 1f) else progress
+                                val bufferedFrac = if (duration > 0) {
+                                    (exoPlayer.bufferedPosition.toFloat() / duration.toFloat()).coerceIn(frac, 1f)
+                                } else {
+                                    frac
+                                }
                                 Box(modifier = Modifier.fillMaxWidth().height(barHeight).align(Alignment.Center), contentAlignment = Alignment.CenterStart) {
+                                Box(modifier = Modifier.fillMaxWidth(bufferedFrac).fillMaxHeight().background(
+                                    Color.White.copy(alpha = 0.45f), RoundedCornerShape(8.dp)
+                                ))
                                 Box(modifier = Modifier.fillMaxWidth(frac).fillMaxHeight().background(
                                     if (trackbarFocused) playerAccent else playerAccent.copy(alpha = 0.8f), RoundedCornerShape(8.dp)
                                 ))
@@ -7318,6 +7345,24 @@ internal data class PlaybackBufferProfile(
     val prioritizeTimeOverSizeThresholds: Boolean
 )
 
+/**
+ * Heap figure used to size the forward buffer.
+ *
+ * Android TV's [memoryClassMb] is often 128–192 even when the manifest requests a large heap,
+ * so the player stopped downloading after a short stretch and the picture stalled. A phone
+ * reports a larger class and keeps filling minutes ahead. TV uses that larger heap, capped
+ * so the time-priority bucket above 768 MB cannot pin a set-top box.
+ */
+internal fun playbackBufferMemoryClassMb(
+    memoryClassMb: Int,
+    largeMemoryClassMb: Int,
+    isLowRamDevice: Boolean,
+    isTvDevice: Boolean
+): Int {
+    if (!isTvDevice || isLowRamDevice) return memoryClassMb.coerceAtLeast(128)
+    return largeMemoryClassMb.coerceIn(384, 512)
+}
+
 internal fun buildPlaybackBufferProfile(
     memoryClassMb: Int,
     isLowRamDevice: Boolean,
@@ -7343,11 +7388,9 @@ internal fun buildPlaybackBufferProfile(
         heapMb <= 512 -> 130_000
         else -> 170_000
     }
-    val startBufferMs = when {
-        isTvDevice && (isLowRamDevice || heapMb <= 384) -> 550
-        isTvDevice -> 450
-        else -> 350
-    }
+    // Same start threshold on the phone and the TV. A longer TV wait left the
+    // picture on the loading screen while the phone had already begun.
+    val startBufferMs = 350
     val rebufferMs = when {
         isLowRamDevice || heapMb <= 256 -> 4_000
         heapMb <= 384 -> 5_000

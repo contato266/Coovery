@@ -49,6 +49,7 @@ class Coovery_Fontes_Install {
             'firebase_project_id' => isset($stored['firebase_project_id']) && $stored['firebase_project_id'] !== ''
                 ? (string) $stored['firebase_project_id']
                 : 'coovery',
+            'tmdb_api_key' => isset($stored['tmdb_api_key']) ? (string) $stored['tmdb_api_key'] : '',
         );
     }
 }

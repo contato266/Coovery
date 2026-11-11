@@ -10,6 +10,7 @@ class Coovery_Fontes_Admin {
         add_action('admin_post_coovery_fontes_save', array(__CLASS__, 'save'));
         add_action('admin_post_coovery_fontes_delete', array(__CLASS__, 'delete'));
         add_action('admin_post_coovery_fontes_settings', array(__CLASS__, 'save_settings'));
+        add_action('wp_ajax_coovery_fontes_search', array(__CLASS__, 'search'));
     }
 
     public static function menu() {
@@ -175,9 +176,13 @@ class Coovery_Fontes_Admin {
         echo '<input type="hidden" name="action" value="coovery_fontes_save" />';
         echo '<input type="hidden" name="id" value="' . (int) $id . '" />';
         wp_nonce_field('coovery_fontes_save');
+        $has_tmdb_key = Coovery_Fontes_Install::settings()['tmdb_api_key'] !== '';
         echo '<table class="form-table"><tbody>';
-        self::text_row('title', 'Título', $title, 'O nome que aparece neste cadastro.');
-        self::text_row('tmdb_id', 'ID TMDB', $tmdb, 'O número do filme ou da série no TMDB.');
+        self::text_row('title', 'Título', $title, $has_tmdb_key
+            ? 'Digite o nome e escolha o filme ou a série na lista.'
+            : 'Salve a chave TMDB em Fontes Coovery para a lista aparecer enquanto você digita.');
+        echo '<tr><td></td><td><div id="coovery-tmdb-results"></div><p id="coovery-tmdb-picked" class="description"></p></td></tr>';
+        self::text_row('tmdb_id', 'ID TMDB', $tmdb, 'Preenchido quando você escolhe o título na lista.');
         echo '<tr><th scope="row"><label for="media_type">Tipo</label></th><td>';
         echo '<select name="media_type" id="media_type">';
         echo '<option value="movie"' . selected($type, 'movie', false) . '>Filme</option>';
@@ -189,6 +194,125 @@ class Coovery_Fontes_Admin {
         echo '</tbody></table>';
         submit_button($id > 0 ? 'Salvar fonte' : 'Adicionar fonte');
         echo '</form>';
+        self::search_script();
+    }
+
+    private static function search_script() {
+        $nonce = wp_create_nonce('coovery_fontes_search');
+        echo '<style>
+            #coovery-tmdb-results { margin-top: 8px; max-width: 520px; }
+            #coovery-tmdb-results button { display: flex; gap: 10px; align-items: center; width: 100%; text-align: left; margin: 0 0 6px; padding: 6px; }
+            #coovery-tmdb-results img { width: 46px; height: 69px; object-fit: cover; background: #dcdcde; }
+        </style>';
+        echo '<script>
+            (function () {
+                var input = document.getElementById("title");
+                var box = document.getElementById("coovery-tmdb-results");
+                var picked = document.getElementById("coovery-tmdb-picked");
+                if (!input || !box) return;
+                var timer = null;
+                input.addEventListener("input", function () {
+                    window.clearTimeout(timer);
+                    var query = input.value.trim();
+                    if (query.length < 2) { box.innerHTML = ""; return; }
+                    timer = window.setTimeout(function () { search(query); }, 300);
+                });
+                function search(query) {
+                    var url = ajaxurl + "?action=coovery_fontes_search&_ajax_nonce=' . esc_js($nonce) . '&q=" + encodeURIComponent(query);
+                    fetch(url, { credentials: "same-origin" }).then(function (response) { return response.json(); }).then(function (payload) {
+                        box.innerHTML = "";
+                        if (!payload || !payload.success) {
+                            box.textContent = (payload && payload.data && payload.data.message) ? payload.data.message : "Não foi possível buscar o título.";
+                            return;
+                        }
+                        if (!payload.data.length) {
+                            box.textContent = "Nenhum filme ou série com esse nome.";
+                            return;
+                        }
+                        payload.data.forEach(function (item) {
+                            var button = document.createElement("button");
+                            button.type = "button";
+                            button.className = "button";
+                            if (item.poster) {
+                                var image = document.createElement("img");
+                                image.src = item.poster;
+                                image.alt = "";
+                                button.appendChild(image);
+                            }
+                            var label = document.createElement("span");
+                            label.textContent = item.label;
+                            button.appendChild(label);
+                            button.addEventListener("click", function () {
+                                input.value = item.title;
+                                document.getElementById("tmdb_id").value = item.id;
+                                document.getElementById("media_type").value = item.type;
+                                picked.textContent = "Selecionado: " + item.label;
+                                box.innerHTML = "";
+                            });
+                            box.appendChild(button);
+                        });
+                    }).catch(function () {
+                        box.textContent = "Não foi possível buscar o título.";
+                    });
+                }
+            }());
+        </script>';
+    }
+
+    public static function search() {
+        check_ajax_referer('coovery_fontes_search');
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(array('message' => 'Você não pode buscar títulos.'), 403);
+        }
+        $query = sanitize_text_field(wp_unslash($_GET['q'] ?? ''));
+        if (strlen($query) < 2) {
+            wp_send_json_success(array());
+        }
+        $key = Coovery_Fontes_Install::settings()['tmdb_api_key'];
+        if ($key === '') {
+            wp_send_json_error(array('message' => 'Salve a chave TMDB em Fontes Coovery.'), 400);
+        }
+        $url = add_query_arg(array(
+            'api_key' => $key,
+            'query' => $query,
+            'language' => 'pt-BR',
+            'include_adult' => 'false',
+        ), 'https://api.themoviedb.org/3/search/multi');
+        $response = wp_remote_get($url, array('timeout' => 8));
+        if (is_wp_error($response) || (int) wp_remote_retrieve_response_code($response) !== 200) {
+            wp_send_json_error(array('message' => 'O TMDB não respondeu. Confira a chave.'), 502);
+        }
+        $body = json_decode((string) wp_remote_retrieve_body($response), true);
+        $results = array();
+        foreach ((array) ($body['results'] ?? array()) as $item) {
+            if (!is_array($item)) {
+                continue;
+            }
+            $media = $item['media_type'] ?? '';
+            if ($media !== 'movie' && $media !== 'tv') {
+                continue;
+            }
+            $name = $media === 'movie' ? (string) ($item['title'] ?? '') : (string) ($item['name'] ?? '');
+            $date = $media === 'movie' ? (string) ($item['release_date'] ?? '') : (string) ($item['first_air_date'] ?? '');
+            $year = strlen($date) >= 4 ? substr($date, 0, 4) : '';
+            $kind = $media === 'movie' ? 'Filme' : 'Série';
+            $label = $name . ($year !== '' ? ' (' . $year . ')' : '') . ' · ' . $kind;
+            $poster = '';
+            if (!empty($item['poster_path']) && is_string($item['poster_path']) && strpos($item['poster_path'], '/') === 0) {
+                $poster = 'https://image.tmdb.org/t/p/w92' . $item['poster_path'];
+            }
+            $results[] = array(
+                'id' => (int) ($item['id'] ?? 0),
+                'title' => $name,
+                'type' => $media === 'movie' ? 'movie' : 'series',
+                'label' => $label,
+                'poster' => $poster,
+            );
+            if (count($results) >= 8) {
+                break;
+            }
+        }
+        wp_send_json_success($results);
     }
 
     private static function text_row($name, $label, $value, $help) {
@@ -207,6 +331,12 @@ class Coovery_Fontes_Admin {
         wp_nonce_field('coovery_fontes_settings');
         echo '<table class="form-table"><tbody>';
         self::text_row('firebase_project_id', 'ID do projeto Firebase', $settings['firebase_project_id'], 'Deixe coovery, a menos que o app use outro projeto.');
+        $key_help = $settings['tmdb_api_key'] !== ''
+            ? 'A chave já está salva. Preencha de novo só para trocar.'
+            : 'A mesma chave TMDB do app. Sem ela, a lista de títulos não aparece.';
+        echo '<tr><th scope="row"><label for="tmdb_api_key">Chave TMDB</label></th><td>';
+        echo '<input class="regular-text" type="password" id="tmdb_api_key" name="tmdb_api_key" value="" autocomplete="off" />';
+        echo '<p class="description">' . esc_html($key_help) . '</p></td></tr>';
         echo '</tbody></table>';
         submit_button('Salvar Firebase', 'secondary', 'submit', false);
         echo ' <button class="button" name="check_certs" value="1">Buscar chaves do Firebase</button>';
@@ -293,8 +423,12 @@ class Coovery_Fontes_Admin {
         if (!preg_match('/^[A-Za-z0-9-]{4,60}$/', $project)) {
             $project = 'coovery';
         }
+        $current = Coovery_Fontes_Install::settings();
+        $posted_key = preg_replace('/[^A-Za-z0-9._-]/', '', (string) wp_unslash($_POST['tmdb_api_key'] ?? ''));
+        $tmdb_key = $posted_key !== '' ? $posted_key : $current['tmdb_api_key'];
         update_option('coovery_fontes_settings', array(
             'firebase_project_id' => strtolower($project),
+            'tmdb_api_key' => $tmdb_key,
         ));
 
         $msg = 'settings';

@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Coovery Fontes
  * Description: Cadastra a URL de cada filme e episódio e entrega essa URL só para quem entrou com uma conta do Firebase.
- * Version: 1.0.0
+ * Version: 1.1.0
  * Author: Coovery
  * Requires at least: 6.0
  * Requires PHP: 7.4
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('COOVERY_FONTES_VERSION', '1.0.0');
+define('COOVERY_FONTES_VERSION', '1.1.0');
 define('COOVERY_FONTES_FILE', __FILE__);
 define('COOVERY_FONTES_DIR', plugin_dir_path(__FILE__));
 

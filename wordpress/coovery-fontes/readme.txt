@@ -9,7 +9,8 @@ Instalação no coovery.com.br:
 3. Ative "Coovery Fontes".
 4. Abra o menu Fontes Coovery.
 5. Confira se o id do projeto Firebase está `coovery` e clique em Buscar chaves do Firebase.
-6. Adicione cada filme ou episódio com o id do TMDB e a URL do vídeo.
+6. Salve a chave TMDB na mesma página. Ela fica só no WordPress.
+7. Ao adicionar uma fonte, digite o nome. Escolha o filme ou a série na lista. O id e o tipo são preenchidos.
 
 A consulta usada pelo app é:
 

@@ -39,6 +39,6 @@
     <color name="pink_primary">#EDEDED</color>
     <color name="pink_secondary">#EDEDED</color>
     <color name="purple_accent">#EDEDED</color>
-    <!-- Launcher Icon Background -->
-    <color name="ic_launcher_background">#000000</color>
+    <!-- Phone launcher background, sampled from the mobile icon. -->
+    <color name="ic_launcher_background">#F6D7AB</color>
 </resources>
